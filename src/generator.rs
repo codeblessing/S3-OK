@@ -21,6 +21,10 @@ impl Task {
         self.length = length;
         self
     }
+
+    pub fn length(&self) -> u128 {
+        self.length
+    }
 }
 #[derive(PartialEq, Debug)]
 pub struct Case {
@@ -61,6 +65,14 @@ impl Case {
         let count = rand::thread_rng().gen_range(1, std::u128::MAX);
         self.tasks = (0..count).map(|_| Task::random()).collect();
         self
+    }
+
+    pub fn cores(&self) -> u128 {
+        self.cores
+    }
+
+    pub fn tasks(&self) -> &Vec<Task> {
+        &self.tasks
     }
 }
 
