@@ -13,7 +13,7 @@ impl Task {
 
     pub fn random() -> Self {
         Self {
-            length: rand::thread_rng().gen_range(1, std::u128::MAX)
+            length: rand::thread_rng().gen_range(1, u128::MAX)
         }
     }
 
@@ -47,7 +47,7 @@ impl Case {
     }
 
     pub fn with_random_cores(mut self) -> Self {
-        self.cores = rand::thread_rng().gen_range(1, std::u128::MAX);
+        self.cores = rand::thread_rng().gen_range(1, u128::MAX);
         self
     }
 
@@ -62,7 +62,7 @@ impl Case {
     }
 
     pub fn with_random_tasks(mut self) -> Self {
-        let count = rand::thread_rng().gen_range(1, std::u128::MAX);
+        let count = rand::thread_rng().gen_range(1, u128::MAX);
         self.tasks = (0..count).map(|_| Task::random()).collect();
         self
     }
