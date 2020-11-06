@@ -1,105 +1,34 @@
-use rand::{self, Rng};
-#[derive(PartialEq, Debug)]
-pub struct Task {
-    length: u128
-}
+use crate::greedy;
+use crate::utils::{case::Case, task::Task};
 
-impl Task {
-    pub fn new() -> Self {
-        Self {
-            length: 0
-        }
-    }
-
-    pub fn random() -> Self {
-        Self {
-            length: rand::thread_rng().gen_range(1, u128::MAX)
-        }
-    }
-
-    pub fn with_length(mut self, length: u128) -> Self {
-        self.length = length;
-        self
-    }
-
-    pub fn length(&self) -> u128 {
-        self.length
-    }
-}
-#[derive(PartialEq, Debug)]
-pub struct Case {
-    cores: u128,
-    tasks: Vec<Task>
-}
+use rand::Rng;
 
 impl Case {
-    pub fn new() -> Self {
-        Case {
-            cores: 0,
-            tasks: Vec::new()
-        }
-    }
+    /// Generates test case for PC||max problem with optimal solution.
+    ///
+    /// # Returns
+    /// Tuple (case: Case, solution: u128) where
+    /// case is generated test case and solution is optimal time.
+    pub fn generate() -> (Self, u128) {
+        let task_max_time : u32 = 1000;
+        
+        let mut rng = rand::thread_rng();
+        let core_count = rng.gen_range(1, 1000);
+        let task_count = rng.gen_range(core_count, 10000);
+        let mut case = Case::new()
+            .with_cores(core_count)
+            .with_tasks(task_count - core_count, |_| {
+                Task::new().with_length(rand::thread_rng().gen_range(1, task_max_time as u64))
+            });
 
-    pub fn with_cores(mut self, cores: u128) -> Self
-    {
-        self.cores = cores;
-        self
-    }
+        let schedule = greedy::schedule(&case);
 
-    pub fn with_random_cores(mut self) -> Self {
-        self.cores = rand::thread_rng().gen_range(1, u128::MAX);
-        self
-    }
+        let max_time = schedule.max_time() + rng.gen_range(1, task_max_time) as u128;
 
-    pub fn with_tasks<F: Fn(u128) -> Task>(mut self, task_count: u128, task_generator: F) -> Self {
-        self.tasks = (0..task_count).map(|x|task_generator(x)).collect();
-        self
-    }
+        schedule.cores().iter().for_each(|core| {
+            case.add_task(Task::new().with_length((max_time - core.working_time()) as u64));
+        });
 
-    pub fn with_task_count(mut self, task_count: u128) -> Self {
-        self.tasks = (0..task_count).map(|_| Task::random()).collect();
-        self
-    }
-
-    pub fn with_random_tasks(mut self) -> Self {
-        let count = rand::thread_rng().gen_range(1, u128::MAX);
-        self.tasks = (0..count).map(|_| Task::random()).collect();
-        self
-    }
-
-    pub fn cores(&self) -> u128 {
-        self.cores
-    }
-
-    pub fn tasks(&self) -> &Vec<Task> {
-        &self.tasks
-    }
-}
-
-#[cfg(test)]
-mod test_case_generator {
-    use super::*;
-
-    #[test]
-    fn test_create_empty() {
-        assert_eq!(Case::new(), Case { cores: 0, tasks: Vec::new() });
-    }
-
-    #[test]
-    fn test_create_with_cores() {
-        assert_eq!(Case::new().with_cores(6).cores, 6);
-    }
-
-    #[test]
-    fn test_create_with_task_count() {
-        assert_eq!(Case::new().with_task_count(42).tasks.len(), 42);
-    }
-
-    #[test]
-    fn test_create_with_tasks() {
-        let test_case = Case::new().with_tasks(5, |i| Task::new().with_length(i + 1));
-        let lengths: Vec<u128> = test_case.tasks.iter().map(|task| task.length).collect();
-        assert_eq!(test_case.tasks.len(), 5);
-        assert_eq!(lengths, vec![1, 2, 3, 4, 5]);
+        (case, max_time)
     }
 }
