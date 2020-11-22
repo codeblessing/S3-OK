@@ -1,10 +1,7 @@
 use super::task::Task;
-use rand::Rng;
-use std::fs;
-use std::io::Write;
 
 /// Represents single test case consisting of cores count and list of Tasks to be scheduled.
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Case {
     cores: u64,
     tasks: Vec<Task>,
@@ -14,7 +11,7 @@ impl Case {
     /// Creates new Case object with no cores and empty task list.
     pub fn new() -> Self {
         Case {
-            cores: 0,
+            cores: 1,
             tasks: Vec::new(),
         }
     }
@@ -27,150 +24,109 @@ impl Case {
     /// let case = Case::new().with_cores(5);
     /// assert_eq!(case.cores(), 5);
     /// ```
-    pub fn with_cores(mut self, cores: u64) -> Self {
+    pub fn with_cores(&mut self, cores: u64) -> &mut Self {
         self.cores = cores;
         self
     }
 
-    /// Sets random core count for case from range 1 - u64::MAX.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let case = Case::new().with_random_cores();
-    /// assert!(case.cores() > 0 && case.cores() <= u64::MAX);
-    /// ```
-    pub fn with_random_cores(mut self) -> Self {
-        self.cores = rand::thread_rng().gen_range(1, u64::MAX);
-        self
-    }
-
-    /// Sets task list for case. Tasks are created using `task_generator` closure.
-    /// `task_generator` takes one argument - index of generated task.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let case = Case::new().with_cores(5).with_tasks(20, |i| { Task::new().with_length(i + 1) });
-    /// assert_eq!(case.cores(), 5);
-    /// assert_eq!(case.tasks().len(), 20);
-    /// assert_eq!(case.tasks()[1].length(), 2);
-    /// ```
-    pub fn with_tasks<F: Fn(u64) -> Task>(mut self, task_count: u64, task_generator: F) -> Self {
-        self.tasks = (0..task_count).map(|x| task_generator(x)).collect();
-        self
-    }
-
-    /// Sets list of random tasks for case.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let case = Case::new().with_cores(5).with_task_count(20);
-    /// assert_eq!(case.cores(), 5);
-    /// assert_eq!(case.tasks().len(), 20);
-    /// ```
-    pub fn with_task_count(mut self, task_count: u64) -> Self {
-        self.tasks = (0..task_count).map(|_| Task::random()).collect();
-        self
-    }
-
-    /// Sets task list of random length with random tasks.
-    pub fn with_random_tasks(mut self) -> Self {
-        let count = rand::thread_rng().gen_range(1, u64::MAX);
-        self.tasks = (0..count).map(|_| Task::random()).collect();
-        self
-    }
-
-    /// Adds task to case's task list.
+    /// Adds `task` to case's task list.
     ///
     /// # Example
     ///
     /// ```
     /// let mut case = Case::new();
-    /// case.add_task(Task::random());
+    /// case.add_task(Task::new().with_length(5));
     /// assert_eq!(case.tasks().len(), 1);
+    /// assert_eq!(case.tasks()[0].length(), 5);
     /// ```
     pub fn add_task(&mut self, task: Task) {
         self.tasks.push(task);
     }
 
-    /// Returns number of cores.
+    /// Adds vector of tasks to case's task list.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut tasks = Vec::new();
+    /// for i in 1..6
+    /// {
+    ///     tasks.push(Task::new().with_length(i));
+    /// }
+    /// let mut case = Case::new();
+    /// case.add_tasks(tasks);
+    /// assert_eq!(case.tasks().len(), 5);
+    /// ```
+    pub fn add_tasks(&mut self, mut tasks: Vec<Task>) {
+        self.tasks.append(&mut tasks);
+    }
+
+    /// Returns number of cores available.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let case = Case::new().with_cores(4).to_owned();
+    /// assert_eq!(case.cores(), 4);
+    /// ```
     pub fn cores(&self) -> u64 {
         self.cores
     }
 
-    /// Returns immutable reference to list of tasks.
+    /// Returns immutable reference to case's task list.
     pub fn tasks(&self) -> &Vec<Task> {
         &self.tasks
     }
+}
 
-    /// Returns lower bound of possible case's solutions
-    /// (equals total time divided by nuber of cores).
-    /// If lower bound is fraction it's rounded upward.
-    pub fn lower_bound(&self) -> u128 {
-        let total_length: u128 = self.tasks().iter().map(|task| task.length() as u128).sum();
-        let remainder = total_length % self.cores as u128;
-        match remainder {
-            0 => total_length / self.cores as u128,
-            _ => (total_length / self.cores as u128) + 1,
-        }
+#[cfg(test)]
+mod test_case {
+    use super::*;
+
+    #[test]
+    fn test_create_empty() {
+        let case = Case::new();
+        assert_eq!(case.cores, 1);
+        assert!(case.tasks.is_empty());
     }
 
-    /// Saves Case object as string to file in form:
-    /// core count
-    /// task count
-    /// task 1 length
-    /// task 2 length
-    /// ...
-    /// task n length
-    pub fn save<T: ToString>(&self, path: T) -> std::io::Result<()> {
-        let mut file = fs::OpenOptions::new()
-            .create(true)
-            .truncate(true)
-            .write(true)
-            .open(path.to_string())?;
-
-        let content = self.tasks().iter().fold(
-            format!("{}\n{}\n", self.cores(), self.tasks().len()),
-            |acc, elem| format!("{}{}\n", acc, elem.length()),
-        );
-
-        file.write_all(content.as_bytes())?;
-
-        Ok(())
+    #[test]
+    fn test_create_with_cores() {
+        let case = Case::new().with_cores(3).to_owned();
+        assert_eq!(case.cores, 3);
     }
 
-    /// Reads Case object from file in form:
-    ///
-    /// core count \
-    /// task count \
-    /// task 1 length\
-    /// task 2 length\
-    /// ...\
-    /// task n length
-    pub fn read<T: ToString>(path: T) -> Result<Case, std::io::Error> {
-        let content = fs::read_to_string(path.to_string())?.trim().to_owned();
+    #[test]
+    fn test_add_task() {
+        let mut case = Case::new();
+        case.add_task(Task::new().with_length(3));
+        assert_eq!(case.tasks.len(), 1);
+        assert_eq!(case.tasks[0].length(), 3);
+    }
 
-        let core_count: u64 = content
-            .lines()
-            .take(1)
-            .map(|val| val.parse::<u64>().ok().unwrap_or(0))
-            .next()
-            .unwrap();
+    #[test]
+    fn test_add_tasks() {
+        let mut case = Case::new();
+        let tasks: Vec<Task> = (0..9).map(|l| Task::new().with_length(l)).collect();
 
-        let vals: Vec<Task> = content
-            .lines()
-            .skip(2)
-            .filter_map(|line| match line.parse::<u64>().ok() {
-                Some(val) => Some(Task::new().with_length(val)),
-                None => None,
-            })
-            .collect();
+        case.add_tasks(tasks);
+    }
 
-        Ok(Self {
-            cores: core_count,
-            tasks: vals,
-        })
+    #[test]
+    fn test_get_cores() {
+        let case = Case::new().with_cores(5).to_owned();
+        assert_eq!(case.cores(), 5);
+    }
+
+    #[test]
+    fn test_get_tasks() {
+        let mut case = Case::new();
+        case.add_task(Task::new().with_length(3));
+        case.add_task(Task::new().with_length(5));
+        case.add_task(Task::new().with_length(8));
+
+        let lengths: Vec<u64> = case.tasks().iter().map(|task| task.length()).collect();
+
+        assert_eq!(lengths, vec![3, 5, 8]);
     }
 }
