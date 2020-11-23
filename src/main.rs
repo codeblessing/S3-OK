@@ -3,21 +3,30 @@ mod generator;
 mod greedy;
 mod pretty_print;
 mod io;
+mod simulated_annealing;
 
 use utils::{Case, Schedule};
+use std::io::Read;
 
 // use utils::case::Case;
 
 fn main() {
-    let (_, optimal) = Case::generate(3, 5, 1, 100, 20);
 
-    optimal.print();
+    let files: Vec<&str> = vec![
+        "./instances/m25.txt",
+        "./instances/m50.txt",
+        "./instances/m50n200.txt",
+        "./instances/m10n200.txt",
+        "./instances/m50n1000.txt"
+    ];
 
-//     case.save("./generated.test").unwrap();
+    for name in files {
 
-//     let solution = greedy::schedule(&case);
+        let case = Case::read_from_file(name).unwrap();
 
-//     println!("Greedy generated solution: {}", solution.max_time());
-//     println!("Optimal solution: {}", optimal);
+        let solution = greedy::schedule(&case);
 
+        // solution.print();
+        println!("{}", solution.makespan());
+    }
 }
