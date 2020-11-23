@@ -80,7 +80,7 @@ mod test_task {
 
     #[test]
     fn test_create_from_range() {
-        let task = Task::new().from_range(0, 64);
+        let task = Task::new().from_range(1, 64);
         assert!(task.length > 0 && task.length < 64);
     }
 
