@@ -7,7 +7,7 @@ impl Schedule {
         let s = "█";
 
         for core in self.cores() {
-            for (i, task) in core.timeline().iter().enumerate() {
+            for task in core.timeline() {
                 let length = task.length() as usize / 10 + 1;
                 let hue = (task.length() * 15 % 360) as f32/ 360.0;
                 print!("{}", s.repeat(length).hsl(hue, 1.0, 0.5));

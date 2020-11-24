@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 mod utils;
 mod generator;
 mod greedy;
@@ -5,8 +6,7 @@ mod pretty_print;
 mod io;
 mod simulated_annealing;
 
-use utils::{Case, Schedule};
-use std::io::Read;
+use utils::Case;
 
 // use utils::case::Case;
 
