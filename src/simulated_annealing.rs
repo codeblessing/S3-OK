@@ -51,6 +51,28 @@ impl Solution {
         self.iteration_count = iteration_count;
         self
     }
+
+    fn reduce_temperature(&self) {
+        match self.reduction_rule {
+            Reduction::Linear(alpha) => self.linear_decrease(alpha),
+            Reduction::Geometric(alpha) => self.geometric_decrease(alpha),
+            Reduction::SlowDecrease(beta) => self.slow_decrease(beta)
+        }
+    }
+
+    fn linear_decrease(&self, alpha: f64) {
+        *self.current_temperature.borrow_mut() -= alpha;
+    }
+
+    fn geometric_decrease(&self, alpha: f64) {
+        *self.current_temperature.borrow_mut() *= alpha;
+    }
+
+    fn slow_decrease(&self, beta: f64) {
+        let temp = *self.current_temperature.borrow();
+
+        *self.current_temperature.borrow_mut() = temp / (1.0 + beta * temp);
+    }
 }
 
 #[cfg(test)]
@@ -95,5 +117,36 @@ mod test_simulated_annealing {
         assert_eq!(solution.iteration_count, 100);
     }
 
-    
+    #[test]
+    fn test_linear_reduction() {
+        let solution = Solution::new()
+            .with_temperature(100.0)
+            .with_reduction_rule(Reduction::Linear(1.0));
+
+        solution.reduce_temperature();
+
+        assert_eq!(*solution.current_temperature.borrow(), 99.0);
+    }
+
+    #[test]
+    fn test_geometric_reduction() {
+        let solution = Solution::new()
+            .with_temperature(100.0)
+            .with_reduction_rule(Reduction::Geometric(0.8));
+
+        solution.reduce_temperature();
+
+        assert_eq!(*solution.current_temperature.borrow(), 80.0);
+    }
+
+    #[test]
+    fn test_slow_reduction() {
+        let solution = Solution::new()
+            .with_temperature(100.0)
+            .with_reduction_rule(Reduction::SlowDecrease(0.01));
+
+        solution.reduce_temperature();
+
+        assert_eq!(*solution.current_temperature.borrow(), 50.0);
+    }
 }
