@@ -52,6 +52,15 @@ impl Solution {
         self
     }
 
+    pub fn with_initial_solution(mut self, solution: Schedule) -> Self {
+        self.initial_solution = solution;
+        self
+    }
+
+    fn evaluate(&self, solution: &Schedule) -> u128 {
+        solution.makespan()
+    }
+
     fn reduce_temperature(&self) {
         match self.reduction_rule {
             Reduction::Linear(alpha) => self.linear_decrease(alpha),
@@ -77,6 +86,8 @@ impl Solution {
 
 #[cfg(test)]
 mod test_simulated_annealing {
+    use crate::utils::Case;
+
     use super::*;
 
     #[test]
@@ -148,5 +159,24 @@ mod test_simulated_annealing {
         solution.reduce_temperature();
 
         assert_eq!(*solution.current_temperature.borrow(), 50.0);
+    }
+
+    #[test]
+    fn test_set_initial_solution() {
+        let (_, initial) = Case::generate(2, 4, 1, 10, 20);
+
+        let solution = Solution::new().with_initial_solution(initial.clone());
+
+        assert_eq!(solution.initial_solution, initial);
+    }
+
+    #[test]
+    fn test_evaluate_solution() {
+        let (_, initial) = Case::generate(2, 4, 1, 10, 20);
+        let makespan = initial.makespan();
+
+        let solution = Solution::new().with_initial_solution(initial);
+
+        assert_eq!(solution.evaluate(&solution.initial_solution), makespan);
     }
 }

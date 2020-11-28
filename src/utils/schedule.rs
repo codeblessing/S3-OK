@@ -1,4 +1,5 @@
 use crate::utils::Core;
+#[derive(Clone, PartialEq, Debug)]
 pub struct Schedule {
     cores: Vec<Core>,
 }

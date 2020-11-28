@@ -1,7 +1,7 @@
 use crate::utils::task::Task;
 
 /// Represent single core (processor) on which task times are scheduled.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Core {
     timeline: Vec<Task>,
     working_time: u128,
