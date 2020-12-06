@@ -1,0 +1,24 @@
+name: P||Cmax problem solver
+version: "0.12.20201205"
+author: "Jakub Kwiatkowski <jakub.j.kwiatkowski@student.put.poznan.pl>\nMaciej Grześ <>"
+args:
+    - prompt:
+        short: p
+        long: prompt
+        help: Asks for next file when idle.
+    - files:
+        short: f
+        long: files
+        help: Specifies input files with data to proceed.
+        multiple: true
+        index: 1
+    - verbose:
+        short: v
+        multiple: true
+        help: "Sets the level of verbosity.\nVerbosity levels:\n
+              \t0 - display only text results.\n
+              \t1 - display final result graph.\n
+              \t2 - display text results after every full iteration. (quite slow)\n
+              \t3 - display result graph after every full iteration. (slow)\n
+              \t4 - display text results after every iteration. (slow)\n
+              \t5 - display result graph after every iteration. (very very slow)"

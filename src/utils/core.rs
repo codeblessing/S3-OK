@@ -33,6 +33,17 @@ impl Core {
     }
 }
 
+impl<T> From<T> for Core where T: Into<Vec<Task>> {
+    fn from(tasks: T) -> Self {
+        let tasks: Vec<Task> = tasks.into();
+        let time: u128 = tasks.iter().map(|task| task.length() as u128).sum();
+        Self {
+            timeline: tasks,
+            working_time: time
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_core {
     use super::*;
