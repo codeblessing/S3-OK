@@ -1,7 +1,7 @@
-use crate::utils::Schedule;
 use crate::utils::Core;
-use std::cell::RefCell;
+use crate::utils::Schedule;
 use rand::Rng;
+use std::cell::RefCell;
 
 /// Temperature reduction rule used by evaluation algorithm.\
 /// Linear(α): `T = T - α`, in that one α have to be positive\
@@ -15,7 +15,7 @@ pub enum Reduction {
 }
 
 /// Simulated Annealing implementation.
-struct Solution {
+pub struct Solution {
     initial_solution: Schedule,
     reduction_rule: Reduction,
     current_temperature: RefCell<f64>,
@@ -59,6 +59,40 @@ impl Solution {
         self
     }
 
+    pub fn run(&mut self) -> Schedule {
+        let mut rng = rand::thread_rng();
+
+        while !self.is_termination_criteria_met() {
+            for i in 0..self.iteration_count {
+                let mut neighbors = gen_neighbours(&self.initial_solution, 20);
+                let neighbor = neighbors.remove(rng.gen_range(0, neighbors.len()));
+
+                let delta = self.evaluate(&neighbor) as i128
+                    - self.evaluate(&self.initial_solution) as i128;
+
+                if delta < 0 {
+                    self.initial_solution = neighbor;
+                } else {
+                    let value: f64 = rng.gen();
+
+                    if value < (-delta as f64 / *self.current_temperature.borrow()).exp() {
+                        self.initial_solution = neighbor;
+                    }
+                }
+            }
+            self.reduce_temperature();
+        }
+
+        self.initial_solution.clone()
+    }
+
+    fn is_termination_criteria_met(&self) -> bool {
+        if *self.current_temperature.borrow() <= self.final_temperature {
+            return true;
+        }
+        false
+    }
+
     fn evaluate(&self, solution: &Schedule) -> u128 {
         solution.makespan()
     }
@@ -67,7 +101,7 @@ impl Solution {
         match self.reduction_rule {
             Reduction::Linear(alpha) => self.linear_decrease(alpha),
             Reduction::Geometric(alpha) => self.geometric_decrease(alpha),
-            Reduction::SlowDecrease(beta) => self.slow_decrease(beta)
+            Reduction::SlowDecrease(beta) => self.slow_decrease(beta),
         }
     }
 
@@ -116,12 +150,11 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
     let fti = rng.gen_range(0, fc_tasks.len());
     let sti = rng.gen_range(0, sc_tasks.len());
 
-    let first_task  = fc_tasks.remove(fti);
+    let first_task = fc_tasks.remove(fti);
     let second_task = sc_tasks.remove(sti);
 
     fc_tasks.push(second_task);
     sc_tasks.push(first_task);
-    
     cores.push(Core::from(fc_tasks));
     cores.push(Core::from(sc_tasks));
 
@@ -233,7 +266,7 @@ mod test_simulated_annealing {
     fn test_neighbour_cores() {
         let mut initial = Schedule::new();
 
-        let mut first_core = Core::new(); 
+        let mut first_core = Core::new();
         let mut second_core = Core::new();
 
         first_core.add_task(crate::utils::Task::new().with_length(1));
@@ -252,7 +285,7 @@ mod test_simulated_annealing {
         let mut count   = 0;
         let mut initial = Schedule::new();
 
-        let mut first_core  = Core::new(); 
+        let mut first_core  = Core::new();
         let mut second_core = Core::new();
         let mut third_core  = Core::new();
 
