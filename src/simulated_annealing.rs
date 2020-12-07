@@ -1,5 +1,7 @@
 use crate::utils::Schedule;
+use crate::utils::Core;
 use std::cell::RefCell;
+use rand::Rng;
 
 /// Temperature reduction rule used by evaluation algorithm.\
 /// Linear(α): `T = T - α`, in that one α have to be positive\
@@ -82,6 +84,53 @@ impl Solution {
 
         *self.current_temperature.borrow_mut() = temp / (1.0 + beta * temp);
     }
+}
+
+pub fn gen_neighbours(schedule: &Schedule, count: u8) -> Vec<Schedule> {
+    let mut neighbours: Vec<Schedule> = Vec::new();
+    for _ in 0..count {
+        if let Some(neighbour) = neighbour(schedule) {
+            neighbours.push(neighbour);
+        }
+    }
+    neighbours
+}
+
+pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
+    let mut rng = rand::thread_rng();
+    let mut cores = initial.cores().to_owned();
+
+    if cores.len() < 2 {
+        return None;
+    }
+
+    // first core index
+    let fci = rng.gen_range(0, cores.len());
+    let mut fc_tasks = cores.remove(fci).timeline().to_owned();
+
+    // second core index
+    let sci = rng.gen_range(0, cores.len());
+    let mut sc_tasks = cores.remove(sci).timeline().to_owned();
+
+    // random task indices
+    let fti = rng.gen_range(0, fc_tasks.len());
+    let sti = rng.gen_range(0, sc_tasks.len());
+
+    let first_task  = fc_tasks.remove(fti);
+    let second_task = sc_tasks.remove(sti);
+
+    fc_tasks.push(second_task);
+    sc_tasks.push(first_task);
+    
+    cores.push(Core::from(fc_tasks));
+    cores.push(Core::from(sc_tasks));
+
+    let mut schedule = Schedule::new();
+    for core in cores {
+        schedule.add_core(core);
+    }
+
+    Some(schedule)
 }
 
 #[cfg(test)]
@@ -179,4 +228,55 @@ mod test_simulated_annealing {
 
         assert_eq!(solution.evaluate(&solution.initial_solution), makespan);
     }
+
+    #[test]
+    fn test_neighbour_cores() {
+        let mut initial = Schedule::new();
+
+        let mut first_core = Core::new(); 
+        let mut second_core = Core::new();
+
+        first_core.add_task(crate::utils::Task::new().with_length(1));
+        second_core.add_task(crate::utils::Task::new().with_length(3));
+
+        initial.add_core(first_core);
+        assert_eq!(neighbour(&initial).to_owned().is_some(), false);
+
+        initial.add_core(second_core);
+        assert_eq!(neighbour(&initial).to_owned().is_some(), true);
+    }
+
+    /*
+    #[test]
+    fn test_neighbour_difference() {
+        let mut count   = 0;
+        let mut initial = Schedule::new();
+
+        let mut first_core  = Core::new(); 
+        let mut second_core = Core::new();
+        let mut third_core  = Core::new();
+
+        first_core.add_task(crate::utils::Task::new().with_length(1));
+        first_core.add_task(crate::utils::Task::new().with_length(1));
+
+        second_core.add_task(crate::utils::Task::new().with_length(2));
+        second_core.add_task(crate::utils::Task::new().with_length(2));
+
+        third_core.add_task(crate::utils::Task::new().with_length(3));
+        third_core.add_task(crate::utils::Task::new().with_length(3));
+
+        initial.add_core(first_core);
+        initial.add_core(second_core);
+        initial.add_core(third_core);
+
+        let case = neighbour(&initial);
+
+        match case {
+            Some(test) =>,
+            None =>
+                count = 0
+        }
+        assert_eq!(count, 2);
+    }
+    */
 }
