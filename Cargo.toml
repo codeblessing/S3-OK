@@ -9,7 +9,12 @@ edition = "2018"
 [dependencies]
 rand = "0.7.3"
 colorful = "0.2.1"
+csv = "1.1.5"
 
 [dependencies.clap]
 version = "2.33.3"
 features = ["yaml"]
+
+[dependencies.serde]
+version = "1.0.118"
+features = ["derive"]

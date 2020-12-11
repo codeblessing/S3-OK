@@ -62,6 +62,8 @@ impl Solution {
     pub fn run(&mut self) -> Schedule {
         let mut rng = rand::thread_rng();
 
+        let mut best: u128 = self.initial_solution.makespan();
+
         while !self.is_termination_criteria_met() {
             for i in 0..self.iteration_count {
                 let mut neighbors = gen_neighbours(&self.initial_solution, 20);

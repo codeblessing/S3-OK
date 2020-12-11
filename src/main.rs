@@ -5,6 +5,7 @@ mod io;
 mod pretty_print;
 mod simulated_annealing;
 mod utils;
+mod serializer;
 
 use clap::load_yaml;
 use simulated_annealing::{Reduction, Solution};
@@ -30,9 +31,9 @@ fn main() {
 
             let mut solution: Solution = Solution::new()
                 .with_final_temperature(0.0)
-                .with_temperature(80.0)
+                .with_temperature(100.0)
                 .with_iterations_per_temperature(20)
-                .with_reduction_rule(Reduction::Linear(5.0))
+                .with_reduction_rule(Reduction::Linear(1.0))
                 .with_initial_solution(greedy.clone());
 
             let sa_solution = solution.run();
