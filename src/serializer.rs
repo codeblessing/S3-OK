@@ -1,6 +1,6 @@
 use csv::Writer;
 use serde::Serialize;
-use std::io::Write;
+use std::{io::Write, error::Error};
 pub struct Serializer<T: Write> {
     is_buffered: bool,
     records: Vec<Record>,
@@ -23,6 +23,10 @@ impl<T: Write> Serializer<T> {
 
     pub fn add_record(&mut self, record: Record) -> &Self {
         self.records.push(record);
+        if !self.is_buffered {
+            self.save().unwrap();
+            self.records.clear();
+        }
         self
     }
 
@@ -51,13 +55,23 @@ pub struct Record {
     makespan: u128,
 }
 
+impl Record {
+    pub fn new(iteration: u64, makespan: u128) -> Self {
+        Self {
+            iteration,
+            makespan
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_serializer {
+    use std::fs::OpenOptions;
     use super::*;
 
     #[test]
     fn test_create_empty() {
-        let file = OpenOptions::new().create(true).open("data.log").unwrap();
+        let file = OpenOptions::new().create(true).write(true).open("data.log").unwrap();
         let serializer = Serializer::new(file);
 
         assert_eq!(serializer.is_buffered, true);

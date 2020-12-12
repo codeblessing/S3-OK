@@ -1,4 +1,4 @@
-use crate::utils::Core;
+use crate::{serializer::{Record, Serializer}, utils::Core};
 use crate::utils::Schedule;
 use rand::Rng;
 use std::cell::RefCell;
@@ -59,11 +59,13 @@ impl Solution {
         self
     }
 
-    pub fn run(&mut self) -> Schedule {
+    pub fn run<T: std::io::Write>(&mut self, serializer_writer: T) -> Schedule {
         let mut rng = rand::thread_rng();
+        let mut serializer = Serializer::new(serializer_writer);
 
         let mut best: u128 = self.initial_solution.makespan();
 
+        let mut iteration: u64 = 1;
         while !self.is_termination_criteria_met() {
             for i in 0..self.iteration_count {
                 let mut neighbors = gen_neighbours(&self.initial_solution, 20);
@@ -81,10 +83,13 @@ impl Solution {
                         self.initial_solution = neighbor;
                     }
                 }
+                serializer.add_record(Record::new(iteration, self.initial_solution.makespan()));
+                iteration += 1;
             }
             self.reduce_temperature();
         }
 
+        serializer.save().unwrap();
         self.initial_solution.clone()
     }
 

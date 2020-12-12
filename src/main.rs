@@ -7,6 +7,8 @@ mod simulated_annealing;
 mod utils;
 mod serializer;
 
+use std::fs::OpenOptions;
+
 use clap::load_yaml;
 use simulated_annealing::{Reduction, Solution};
 use utils::Case;
@@ -36,7 +38,8 @@ fn main() {
                 .with_reduction_rule(Reduction::Linear(1.0))
                 .with_initial_solution(greedy.clone());
 
-            let sa_solution = solution.run();
+            let log_file = OpenOptions::new().write(true).create(true).open("data.log").unwrap();
+            let sa_solution = solution.run(log_file);
 
             println!("Initial solution: {}\nSA solution: {}", greedy.makespan(), sa_solution.makespan());
         }
