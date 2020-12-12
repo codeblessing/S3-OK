@@ -1,4 +1,4 @@
-use crate::{serializer::{Record, Serializer}, utils::Core};
+use crate::{serializer::{Record, Serializer}, utils::{Core, Settings}};
 use crate::utils::Schedule;
 use rand::Rng;
 use std::cell::RefCell;
@@ -62,12 +62,11 @@ impl Solution {
     pub fn run<T: std::io::Write>(&mut self, serializer_writer: T) -> Schedule {
         let mut rng = rand::thread_rng();
         let mut serializer = Serializer::new(serializer_writer);
-
-        let mut best: u128 = self.initial_solution.makespan();
+        let settings = &*Settings::get().unwrap().read().unwrap();
 
         let mut iteration: u64 = 1;
         while !self.is_termination_criteria_met() {
-            for i in 0..self.iteration_count {
+            for _ in 0..self.iteration_count {
                 let mut neighbors = gen_neighbours(&self.initial_solution, 20);
                 let neighbor = neighbors.remove(rng.gen_range(0, neighbors.len()));
 

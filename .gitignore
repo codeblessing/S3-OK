@@ -5,4 +5,3 @@
 *.test
 *.case
 *.log
-**/settings.rs

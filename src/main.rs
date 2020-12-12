@@ -11,19 +11,28 @@ use std::fs::OpenOptions;
 
 use clap::load_yaml;
 use simulated_annealing::{Reduction, Solution};
-use utils::Case;
+use utils::{Case, Settings};
 
 fn main() {
     let cli_settings = load_yaml!("settings.yaml");
     let app_args = clap::App::from_yaml(cli_settings).get_matches();
 
+    let settings = Settings {
+        prompt: app_args.is_present("prompt"),
+        verbosity: app_args.occurrences_of("verbose") as u8,
+        input_files: app_args.values_of("files").and_then(|vals| Some(vals.map(|val| val.to_string()).collect::<Vec<String>>())).unwrap_or(Vec::new()),
+        log_file: app_args.value_of("logfile").unwrap_or("data.log").to_string(),
+        kill_time: app_args.value_of("kill").unwrap_or("3000").parse().unwrap()
+    };
+
+    Settings::init(settings.prompt, settings.verbosity, settings.input_files, settings.log_file, settings.kill_time);
+
     loop {
         let filename: String;
-        if app_args.is_present("prompt") {
+        if settings.prompt {
             println!("Enter path to data file (or type `exit` to end program): ");
             filename = readln!();
             if filename.eq_ignore_ascii_case("exit") {
-                dbg!("Typed `exit`");
                 break;
             }
 
