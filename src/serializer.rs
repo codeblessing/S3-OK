@@ -1,10 +1,8 @@
-use csv::Writer;
-use serde::Serialize;
-use std::{io::Write, error::Error};
+use std::{error::Error, io::Write};
 pub struct Serializer<T: Write> {
     is_buffered: bool,
     records: Vec<Record>,
-    writer: Writer<T>,
+    writer: T,
 }
 
 impl<T: Write> Serializer<T> {
@@ -12,7 +10,7 @@ impl<T: Write> Serializer<T> {
         Self {
             is_buffered: true,
             records: Vec::new(),
-            writer: Writer::from_writer(writer),
+            writer: writer,
         }
     }
 
@@ -24,32 +22,27 @@ impl<T: Write> Serializer<T> {
     pub fn add_record(&mut self, record: Record) -> &Self {
         self.records.push(record);
         if !self.is_buffered {
-            self.save().unwrap();
-            self.records.clear();
+            self.save("").unwrap();
         }
         self
     }
 
-    pub fn save(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn save(&mut self, delimiter: &str) -> Result<(), Box<dyn Error>> {
         for record in &self.records {
-            self.writer.serialize(record)?;
+            self.writer
+                .write_all(format!("{}\n", record.serialize()).as_bytes())?;
         }
+        self.writer.write_all(delimiter.as_bytes())?;
         self.writer.flush()?;
+        self.records.clear();
         Ok(())
     }
 
-    pub fn get_writer(self) -> Result<T, ()> {
-        match self.writer.into_inner() {
-            Ok(writer) => Ok(writer),
-            Err(err) => {
-                eprintln!("Error: {}", err);
-                Err(())
-            }
-        }
+    pub fn get_writer(&self) -> &T {
+        &self.writer
     }
 }
 
-#[derive(Serialize)]
 pub struct Record {
     iteration: u64,
     makespan: u128,
@@ -59,20 +52,22 @@ impl Record {
     pub fn new(iteration: u64, makespan: u128) -> Self {
         Self {
             iteration,
-            makespan
+            makespan,
         }
+    }
+
+    pub fn serialize(&self) -> String {
+        format!("{},{}", self.iteration, self.makespan)
     }
 }
 
 #[cfg(test)]
 mod test_serializer {
-    use std::fs::OpenOptions;
     use super::*;
 
     #[test]
     fn test_create_empty() {
-        let file = OpenOptions::new().create(true).write(true).open("data.log").unwrap();
-        let serializer = Serializer::new(file);
+        let serializer = Serializer::new(Vec::new());
 
         assert_eq!(serializer.is_buffered, true);
         assert!(serializer.records.is_empty());
@@ -80,8 +75,7 @@ mod test_serializer {
 
     #[test]
     fn test_serialize_record() {
-        let output = Vec::new();
-        let mut serializer = Serializer::new(output);
+        let mut serializer = Serializer::new(Vec::new());
 
         for i in 0..5 {
             serializer.add_record(Record {
@@ -90,11 +84,8 @@ mod test_serializer {
             });
         }
 
-        serializer.save().unwrap();
-        let out = String::from_utf8(serializer.get_writer().unwrap()).unwrap();
-        assert_eq!(
-            out,
-            String::from("iteration,makespan\n0,0\n1,1\n2,2\n3,3\n4,4\n")
-        );
+        serializer.save("").unwrap();
+        let out = String::from_utf8(serializer.get_writer().to_owned()).unwrap();
+        assert_eq!(out, String::from("0,0\n1,1\n2,2\n3,3\n4,4\n"));
     }
 }

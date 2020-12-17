@@ -1,6 +1,8 @@
-use crate::{serializer::{Record, Serializer}, utils::{Core, Settings}};
-use crate::utils::Schedule;
-use rand::Rng;
+use crate::{
+    serializer::{Record, Serializer},
+    utils::{Core, Schedule},
+};
+use rand::{seq::IteratorRandom, Rng};
 use std::cell::RefCell;
 
 /// Temperature reduction rule used by evaluation algorithm.\
@@ -17,6 +19,7 @@ pub enum Reduction {
 /// Simulated Annealing implementation.
 pub struct Solution {
     initial_solution: Schedule,
+    current_solution: RefCell<Schedule>,
     reduction_rule: Reduction,
     current_temperature: RefCell<f64>,
     final_temperature: f64,
@@ -27,6 +30,7 @@ impl Solution {
     pub fn new() -> Self {
         Self {
             initial_solution: Schedule::new(),
+            current_solution: RefCell::new(Schedule::new()),
             reduction_rule: Reduction::Linear(0.0),
             current_temperature: RefCell::new(0.0),
             final_temperature: 0.0,
@@ -59,16 +63,15 @@ impl Solution {
         self
     }
 
-    pub fn run<T: std::io::Write>(&mut self, serializer_writer: T) -> Schedule {
+    pub fn run<T: std::io::Write>(&mut self, serializer: &mut Serializer<T>) -> Schedule {
         let mut rng = rand::thread_rng();
-        let mut serializer = Serializer::new(serializer_writer);
-        let settings = &*Settings::get().unwrap().read().unwrap();
 
         let mut iteration: u64 = 1;
         while !self.is_termination_criteria_met() {
             for _ in 0..self.iteration_count {
-                let mut neighbors = gen_neighbours(&self.initial_solution, 20);
-                let neighbor = neighbors.remove(rng.gen_range(0, neighbors.len()));
+                let neighbors = gen_neighbours(&self.initial_solution, 20);
+
+                let neighbor = neighbors.iter().choose(&mut rng).unwrap().to_owned();
 
                 let delta = self.evaluate(&neighbor) as i128
                     - self.evaluate(&self.initial_solution) as i128;
@@ -88,7 +91,8 @@ impl Solution {
             self.reduce_temperature();
         }
 
-        serializer.save().unwrap();
+        serializer.save("---\n").unwrap();
+        println!("{}", self.initial_solution.makespan());
         self.initial_solution.clone()
     }
 

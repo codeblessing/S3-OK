@@ -16,6 +16,10 @@ args:
               \t3 - display result graph after every full iteration. (slow)\n
               \t4 - display text results after every iteration. (slow)\n
               \t5 - display result graph after every iteration. (very very slow)"
+    - unbuffered:
+        short: ub
+        long: unbuffered
+        help: Sets whether logging should be unbuffered. Unbuffered logging flush results every iteration.
     - files:
         short: f
         long: files
