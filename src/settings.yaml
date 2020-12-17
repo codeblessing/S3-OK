@@ -20,6 +20,12 @@ args:
         short: ub
         long: unbuffered
         help: Sets whether logging should be unbuffered. Unbuffered logging flush results every iteration.
+    # - generate:
+    #     short: g
+    #     long: generate
+    #     help: "Generates [COUNT] tasks to proceed"
+    #     takes_value: true
+    #     value_name: COUNT
     - files:
         short: f
         long: files

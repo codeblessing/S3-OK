@@ -17,7 +17,7 @@ with open(log_filename) as logfile:
             if not row == []:
                 indices.append(int(row[0]))
                 makespans.append(int(row[1]))
-        plt = pp.figure(index)
+        plt = pp.figure(index, figsize=(16, 9))
         pp.title(f"Case {index}")
         pp.xlabel("Iterations")
         pp.ylabel("Makespan")

@@ -4,6 +4,7 @@ use std::sync::RwLock;
 #[derive(Default)]
 pub struct Settings {
     pub prompt: bool,
+    pub unbuffered: bool,
     pub verbosity: u8,
     pub input_files: Vec<String>,
     pub log_file: String,
@@ -13,9 +14,10 @@ pub struct Settings {
 static SETTINGS: OnceCell<RwLock<Settings>> = OnceCell::new();
 
 impl Settings {
-    pub fn init(prompt: bool, verbosity: u8, files: Vec<String>, log_file: String, kill_time: u16) {
+    pub fn init(prompt: bool, unbuffered: bool, verbosity: u8, files: Vec<String>, log_file: String, kill_time: u16) {
         match SETTINGS.set(RwLock::new(Settings {
             prompt,
+            unbuffered,
             verbosity,
             input_files: files,
             log_file,

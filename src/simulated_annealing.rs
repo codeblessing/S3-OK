@@ -1,9 +1,6 @@
-use crate::{
-    serializer::{Record, Serializer},
-    utils::{Core, Schedule},
-};
+use crate::{serializer::{Record, Serializer}, utils::{Core, Schedule, Settings}};
 use rand::{seq::IteratorRandom, Rng};
-use std::cell::RefCell;
+use std::{cell::RefCell, time::Instant};
 
 /// Temperature reduction rule used by evaluation algorithm.\
 /// Linear(α): `T = T - α`, in that one α have to be positive\
@@ -59,41 +56,63 @@ impl Solution {
     }
 
     pub fn with_initial_solution(mut self, solution: Schedule) -> Self {
-        self.initial_solution = solution;
+        self.initial_solution = solution.clone();
+        *self.current_solution.borrow_mut() = solution;
         self
     }
 
     pub fn run<T: std::io::Write>(&mut self, serializer: &mut Serializer<T>) -> Schedule {
         let mut rng = rand::thread_rng();
+        let settings = Settings::get().unwrap().read().unwrap();
 
+        let mut best_solution: Schedule = self.initial_solution.clone();
         let mut iteration: u64 = 1;
-        while !self.is_termination_criteria_met() {
-            for _ in 0..self.iteration_count {
-                let neighbors = gen_neighbours(&self.initial_solution, 20);
 
+        let mut unchanged_iterations = 0u32;
+
+        let timer = Instant::now();
+        while !self.is_termination_criteria_met() && timer.elapsed().as_secs() < settings.kill_time.into() && unchanged_iterations < 500 {
+            for _ in 0..self.iteration_count {
+                // Generate neighborhood and choose one of neighbors.
+                let neighbors = gen_neighbours(&self.initial_solution, 20);
                 let neighbor = neighbors.iter().choose(&mut rng).unwrap().to_owned();
 
-                let delta = self.evaluate(&neighbor) as i128
-                    - self.evaluate(&self.initial_solution) as i128;
+                // Calculate delta between best timed schedule and neighbor.
+                // The reason for comparing with best time is simple:
+                // if our delta will differ a lot from best solution then
+                // chances to approve it will dive. If we'd been comparing with
+                // current solution then we could worsed makespans step by step
+                // instead of improving them.
+                let delta = (self.evaluate(&neighbor) as i128 - self.evaluate(&best_solution) as i128) as f64;
+                // dbg!(delta);
 
-                if delta < 0 {
-                    self.initial_solution = neighbor;
+                if delta < 0.0 {
+                    *self.current_solution.borrow_mut() = neighbor;
                 } else {
                     let value: f64 = rng.gen();
 
-                    if value < (-delta as f64 / *self.current_temperature.borrow()).exp() {
-                        self.initial_solution = neighbor;
+                    if value < (-1.0 * delta / *self.current_temperature.borrow()).exp() {
+                        *self.current_solution.borrow_mut() = neighbor;
+                    }
+                    else {
+                        unchanged_iterations += 1;
                     }
                 }
-                serializer.add_record(Record::new(iteration, self.initial_solution.makespan()));
+
+                if self.current_solution.borrow().makespan() < best_solution.makespan() {
+                    best_solution = self.current_solution.borrow().clone();
+                }
+
+                serializer.add_record(Record::new(iteration, self.current_solution.borrow().makespan()));
                 iteration += 1;
+                // println!("Best: {}", best_solution.makespan());
             }
             self.reduce_temperature();
         }
 
         serializer.save("---\n").unwrap();
         println!("{}", self.initial_solution.makespan());
-        self.initial_solution.clone()
+        best_solution
     }
 
     fn is_termination_criteria_met(&self) -> bool {

@@ -14,14 +14,17 @@ impl App {
             .append(true)
             .open(&settings.log_file)?;
         let mut serializer = Serializer::new(log_file);
+        serializer.buffered(!settings.unbuffered);
+
         let case = Case::read_from_file(file)?;
         let initial = greedy::schedule(&case);
 
+        println!("Greedy solution: {}", initial.makespan());
         let solution = Solution::new()
             .with_initial_solution(initial)
             .with_iterations_per_temperature(100)
-            .with_reduction_rule(Reduction::Linear(5.0))
-            .with_temperature(80.0)
+            .with_reduction_rule(Reduction::Linear(0.5))
+            .with_temperature(200.0)
             .run(&mut serializer);
 
         Ok(solution)

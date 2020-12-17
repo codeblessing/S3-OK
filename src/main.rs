@@ -20,6 +20,7 @@ fn main() {
 
     let settings = Settings {
         prompt: app_args.is_present("prompt"),
+        unbuffered: app_args.is_present("unbuffered"),
         verbosity: app_args.occurrences_of("verbose") as u8,
         input_files: app_args
             .values_of("files")
@@ -34,6 +35,7 @@ fn main() {
 
     Settings::init(
         settings.prompt,
+        settings.unbuffered,
         settings.verbosity,
         settings.input_files,
         settings.log_file,
