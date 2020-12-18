@@ -1,5 +1,7 @@
 /target
 /.idea
+/analysis
 
 *.test
 *.case
+*.log
