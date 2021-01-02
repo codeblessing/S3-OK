@@ -34,7 +34,7 @@ mod test_greedy_task_planning {
         case.with_cores(4);
 
         for i in 1..11 {
-            case.add_task(Task::new().with_length(i));
+            case.add_task(Task::with_length(i));
         }
 
         let schedule = schedule(&case);

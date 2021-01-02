@@ -20,6 +20,7 @@ Statistically better approximation is given by Longest Tasks First (LTF) algorit
 
 # Heuristics
 
+This solution uses metaheuristics called Simulated Annealing. This simple in it's assumptions technique allows us to 
 
 [PCMAX1]: docs/img/pcmax1.png
 [PCMAX2]: docs/img/pcmax2.png

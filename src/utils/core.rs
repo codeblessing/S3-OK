@@ -1,9 +1,12 @@
 use crate::utils::task::Task;
+use serde::{Serialize, Deserialize};
 
 /// Represent single core (processor) on which task times are scheduled.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct Core {
+    #[serde(rename = "tasks")]
     timeline: Vec<Task>,
+    #[serde(skip)]
     working_time: u128,
 }
 
@@ -58,7 +61,7 @@ mod test_core {
     #[test]
     fn test_add_task() {
         let mut core = Core::new();
-        core.add_task(Task::new().with_length(2));
+        core.add_task(Task::with_length(2));
         assert_eq!(core.timeline.len(), 1);
         assert_eq!(core.working_time, 2);
     }
@@ -66,9 +69,9 @@ mod test_core {
     #[test]
     fn test_get_timeline() {
         let mut core = Core::new();
-        core.add_task(Task::new().with_length(3));
-        core.add_task(Task::new().with_length(5));
-        core.add_task(Task::new().with_length(7));
+        core.add_task(Task::with_length(3));
+        core.add_task(Task::with_length(5));
+        core.add_task(Task::with_length(7));
 
         let lengths: Vec<u64> = core.timeline().iter().map(|task| task.length()).collect();
         assert_eq!(lengths, vec![3, 5, 7]);
@@ -77,8 +80,8 @@ mod test_core {
     #[test]
     fn test_get_working_time() {
         let mut core = Core::new();
-        core.add_task(Task::new().with_length(3));
-        core.add_task(Task::new().with_length(5));
+        core.add_task(Task::with_length(3));
+        core.add_task(Task::with_length(5));
 
         assert_eq!(core.working_time(), 8);
     }

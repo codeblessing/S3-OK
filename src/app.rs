@@ -1,6 +1,6 @@
 use crate::greedy;
 use crate::serializer::Serializer;
-use crate::simulated_annealing::{Reduction, Solution};
+use crate::simulated_annealing::{Reduction, SimulatedAnnealingParams, Solution};
 use crate::utils::{Case, Schedule, Settings};
 use std::{error::Error, fs::OpenOptions};
 pub struct App {}
@@ -20,12 +20,17 @@ impl App {
         let initial = greedy::schedule(&case);
 
         println!("Greedy solution: {}", initial.makespan());
-        let solution = Solution::new()
-            .with_initial_solution(initial)
-            .with_iterations_per_temperature(100)
-            .with_reduction_rule(Reduction::Linear(0.5))
-            .with_temperature(200.0)
-            .run(&mut serializer);
+        let params = SimulatedAnnealingParams {
+            initial_solution: initial,
+            initial_temperature: 100.0,
+            final_temperature: 0.0,
+            reduction_rule: Reduction::SlowDecrease(0.5),
+            iterations_per_temperature: 100,
+            max_simulation_time: settings.kill_time,
+            max_changeless_iterations: 500,
+        };
+
+        let solution = Solution::new(params).run(&mut serializer);
 
         Ok(solution)
     }

@@ -28,7 +28,7 @@ impl FromStr for Case {
         let mut tasks: Vec<Task> = Vec::new();
         for line in lines.iter().skip(2) {
             let length = line.parse::<u64>()?;
-            tasks.push(Task::new().with_length(length));
+            tasks.push(Task::with_length(length));
         }
 
         let mut case = Case::new();
@@ -74,11 +74,11 @@ mod test_case_io {
     #[test]
     fn test_case_to_string() {
         let mut case = Case::new();
-        case.add_task(Task::new().with_length(3));
-        case.add_task(Task::new().with_length(6));
-        case.add_task(Task::new().with_length(10));
+        case.add_task(Task::with_length(3));
+        case.add_task(Task::with_length(6));
+        case.add_task(Task::with_length(10));
 
-        assert_eq!(case.to_string(), String::from("1\n3\n3\n6\n10"));
+        assert_eq!(case.to_string(), String::from("0\n3\n3\n6\n10"));
     }
 
     #[test]

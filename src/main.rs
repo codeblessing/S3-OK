@@ -24,13 +24,10 @@ fn main() {
         verbosity: app_args.occurrences_of("verbose") as u8,
         input_files: app_args
             .values_of("files")
-            .and_then(|vals| Some(vals.map(|val| val.to_string()).collect::<Vec<String>>()))
+            .and_then(|vals| Some(vals.map(ToString::to_string).collect::<Vec<String>>()))
             .unwrap_or(Vec::new()),
-        log_file: app_args
-            .value_of("logfile")
-            .unwrap_or("data.log")
-            .to_string(),
-        kill_time: app_args.value_of("kill").unwrap_or("3000").parse().unwrap(),
+        log_file: app_args.value_of("logfile").unwrap().to_string(),
+        kill_time: app_args.value_of("kill").unwrap().parse().unwrap(),
     };
 
     Settings::init(

@@ -1,7 +1,9 @@
 /target
 /.idea
 /analysis
+/report
 
+*report*
 *.test
 *.case
 *.log

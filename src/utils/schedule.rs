@@ -1,5 +1,9 @@
+use std::error::Error;
+
 use crate::utils::Core;
-#[derive(Clone, PartialEq, Debug)]
+use serde::Serialize;
+use serde_json;
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct Schedule {
     cores: Vec<Core>,
 }
@@ -23,6 +27,11 @@ impl Schedule {
             .max_by(|x, y| x.working_time().cmp(&y.working_time()))
             .unwrap()
             .working_time()
+    }
+
+    pub fn serialize(&self) -> Result<String, Box<dyn Error>> {
+        let serialized = serde_json::to_string(self)?;
+        Ok(serialized)
     }
 }
 
@@ -60,11 +69,11 @@ mod test_schedule {
     fn test_makespan() {
         let mut schedule = Schedule::new();
         let mut first_core = Core::new();
-        first_core.add_task(Task::new().with_length(7));
+        first_core.add_task(Task::with_length(7));
         let mut second_core = Core::new();
-        second_core.add_task(Task::new().with_length(8));
+        second_core.add_task(Task::with_length(8));
         let mut third_core = Core::new();
-        third_core.add_task(Task::new().with_length(5));
+        third_core.add_task(Task::with_length(5));
 
         schedule.add_core(first_core);
         schedule.add_core(second_core);

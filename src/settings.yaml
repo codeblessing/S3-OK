@@ -1,5 +1,5 @@
 name: P||Cmax problem solver
-version: "0.12.20201212"
+version: "0.12.20210102"
 author: "Jakub Kwiatkowski <jakub.j.kwiatkowski@student.put.poznan.pl>\nMaciej Grześ <>"
 args:
     - prompt:
@@ -20,12 +20,6 @@ args:
         short: ub
         long: unbuffered
         help: Sets whether logging should be unbuffered. Unbuffered logging flush results every iteration.
-    # - generate:
-    #     short: g
-    #     long: generate
-    #     help: "Generates [COUNT] tasks to proceed"
-    #     takes_value: true
-    #     value_name: COUNT
     - files:
         short: f
         long: files
@@ -39,9 +33,62 @@ args:
         long: log-file
         help: Specifies log output file.
         value_name: FILE
+        default_value: data.log
     - kill:
         short: k
         long: kill
         takes_value: true
         value_name: TIME
         multiple: false
+        default_value: '120'
+subcommands:
+    - generate:
+        about: Generates test cases
+        version: "0.12.20210102"
+        args:
+            - min_cores:
+                long: min-core-count
+                help: Specifies maximum number of cores that should be used in generated case. Defaults to 2.
+                multiple: false
+                takes_value: true
+                value_name: MIN CORE COUNT
+                default_value: '2'
+            - max_cores:
+                short: c
+                long: max-core-count
+                help: Specifies maximum number of cores that should be used in generated case.
+                required: true
+                multiple: false
+                takes_value: true
+                value_name: MAX CORE COUNT
+            - tasks:
+                short: t
+                long: task-count
+                help: Specifies maximum number of tasks that should be used in generated case.
+                required: true
+                multiple: false
+                takes_value: true
+                value_name: TASK COUNT
+            - min_tasks:
+                long: min-task-time
+                help: Specifies minimum computation time that task can have. Defaults to 1.
+                multiple: false
+                takes_value: true
+                value_name: MIN TASK TIME
+                default_value: '1'
+            - max_tasks:
+                long: max-task-time
+                help: Specifies maximum computation time that task can have. Defaults to 100.
+                multiple: false
+                takes_value: true
+                value_name: MAX TASK TIME
+                default_value: '100'
+            - output:
+                short: o
+                long: output
+                help: Specifies name of output file.
+                long_help: "Specifies name of output file.\n
+                            Generator creates two output files:\n
+                            One with test case (and this one is named '[NAME]') and
+                            one with optimal schedule for this test case (this one is named
+                            '[NAME].schedule'"

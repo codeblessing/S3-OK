@@ -1,26 +1,11 @@
 use rand::Rng;
+use serde::Serialize;
 
 /// Represents single, indivisible task, which takes `length` time to complete.
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub struct Task {
-    length: u64
-}
+#[derive(PartialEq, Debug, Clone, Copy, Serialize)]
+pub struct Task (u64);
 
 impl Task {
-    /// Creates new Task object with length 0.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let task = Task::new();
-    /// assert_eq!(task.length(), 0);
-    /// ```
-    pub fn new() -> Self {
-        Self {
-            length: 0
-        }
-    }
-
     /// Sets up length of the task object.
     ///
     /// # Example
@@ -29,9 +14,8 @@ impl Task {
     /// let task = Task::new().with_length(30);
     /// assert_eq!(task.length(), 30);
     /// ```
-    pub fn with_length(mut self, length: u64) -> Self {
-        self.length = length;
-        self
+    pub fn with_length(length: u64) -> Self {
+        Self(length)
     }
 
     /// Creates new Task object with random length from range [min; max),
@@ -40,12 +24,11 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// let task = Task::new().from_range(1, 64);
+    /// let task = Task::from_range(1, 64);
     /// assert!(task.length() > 0 && task.length() < 64);
     /// ```
-    pub fn from_range(mut self, min: u64, max: u64) -> Self {
-        self.length = rand::thread_rng().gen_range(min, max);
-        self
+    pub fn from_range(min: u64, max: u64) -> Self {
+        Self(rand::thread_rng().gen_range(min..max))
     }
 
     /// Returns Task length.
@@ -58,7 +41,7 @@ impl Task {
     /// ```
     pub fn length(&self) -> u64
     {
-        return self.length;
+        return self.0;
     }
 }
 
@@ -67,26 +50,26 @@ mod test_task {
     use super::*;
 
     #[test]
-    fn test_create_empty() {
-        let task = Task::new();
-        assert_eq!(task.length, 0);
-    }
-
-    #[test]
     fn test_create_with_length() {
-        let task = Task::new().with_length(2);
-        assert_eq!(task.length, 2);
+        let task = Task::with_length(2);
+        assert_eq!(task.length(), 2);
     }
 
     #[test]
     fn test_create_from_range() {
-        let task = Task::new().from_range(1, 64);
-        assert!(task.length > 0 && task.length < 64);
+        let task = Task::from_range(1, 64);
+        assert!(task.length() > 0 && task.length() < 64);
     }
 
     #[test]
     fn test_get_length() {
-        let task = Task::new().with_length(5);
-        assert_eq!(task.length, task.length());
+        let task = Task::with_length(5);
+        assert_eq!(task.0, task.length());
+    }
+
+    #[test]
+    fn test_serialize() {
+        let serialized = serde_json::to_string(&Task(84)).unwrap();
+        println!("{}", serialized);
     }
 }
