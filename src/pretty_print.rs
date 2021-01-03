@@ -1,16 +1,16 @@
 use crate::utils::Schedule;
-
-use colorful::Colorful;
+use colorful::{Colorful, RGB};
 
 impl Schedule {
     pub fn print(&self) {
         let s = "█";
+        let colors = vec![RGB::new(154, 205, 50), RGB::new(255, 215, 0)];
 
         for core in self.cores() {
-            for task in core.timeline() {
-                let length = task.length() as usize / 10 + 1;
-                let hue = (task.length() * 15 % 360) as f32/ 360.0;
-                print!("{}", s.repeat(length).hsl(hue, 1.0, 0.5));
+            for (idx, task) in core.get_tasks().iter().enumerate() {
+                let length = (task.length() as f64 / core.working_time() as f64 * 180.0) as usize;
+                let (r, g, b) = colors.get(idx % 2).unwrap().unpack();
+                print!("{}", s.repeat(length).rgb(r, g, b));
             }
             print!("\n");
         }

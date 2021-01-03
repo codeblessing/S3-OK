@@ -11,7 +11,7 @@ impl Case {
     /// Creates new Case object with no cores and empty task list.
     pub fn new() -> Self {
         Case {
-            cores: 1,
+            cores: 0,
             tasks: Vec::new(),
         }
     }
@@ -24,7 +24,7 @@ impl Case {
     /// let case = Case::new().with_cores(5);
     /// assert_eq!(case.cores(), 5);
     /// ```
-    pub fn with_cores(&mut self, cores: u64) -> &mut Self {
+    pub fn with_cores(mut self, cores: u64) -> Self {
         self.cores = cores;
         self
     }
@@ -73,9 +73,9 @@ impl Case {
         self.cores
     }
 
-    /// Returns immutable reference to case's task list.
-    pub fn tasks(&self) -> &Vec<Task> {
-        &self.tasks
+    /// Returns case's task list.
+    pub fn tasks(&self) -> Vec<Task> {
+        self.tasks.clone()
     }
 }
 
@@ -86,7 +86,7 @@ mod test_case {
     #[test]
     fn test_create_empty() {
         let case = Case::new();
-        assert_eq!(case.cores, 1);
+        assert_eq!(case.cores, 0);
         assert!(case.tasks.is_empty());
     }
 
@@ -99,7 +99,7 @@ mod test_case {
     #[test]
     fn test_add_task() {
         let mut case = Case::new();
-        case.add_task(Task::new().with_length(3));
+        case.add_task(Task::with_length(3));
         assert_eq!(case.tasks.len(), 1);
         assert_eq!(case.tasks[0].length(), 3);
     }
@@ -107,7 +107,7 @@ mod test_case {
     #[test]
     fn test_add_tasks() {
         let mut case = Case::new();
-        let tasks: Vec<Task> = (0..9).map(|l| Task::new().with_length(l)).collect();
+        let tasks: Vec<Task> = (0..9).map(|l| Task::with_length(l)).collect();
 
         case.add_tasks(tasks);
     }
@@ -121,9 +121,9 @@ mod test_case {
     #[test]
     fn test_get_tasks() {
         let mut case = Case::new();
-        case.add_task(Task::new().with_length(3));
-        case.add_task(Task::new().with_length(5));
-        case.add_task(Task::new().with_length(8));
+        case.add_task(Task::with_length(3));
+        case.add_task(Task::with_length(5));
+        case.add_task(Task::with_length(8));
 
         let lengths: Vec<u64> = case.tasks().iter().map(|task| task.length()).collect();
 

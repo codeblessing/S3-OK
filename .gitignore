@@ -1,5 +1,10 @@
 /target
 /.idea
+/analysis
+/report
 
+*report*
 *.test
 *.case
+*.schedule
+*.log

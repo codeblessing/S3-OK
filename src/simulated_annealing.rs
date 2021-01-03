@@ -1,7 +1,9 @@
-use crate::utils::Core;
-use crate::utils::Schedule;
-use rand::Rng;
-use std::cell::RefCell;
+use crate::{
+    serializer::{Record, Serializer},
+    utils::{Core, Schedule},
+};
+use rand::{seq::IteratorRandom, Rng};
+use std::time::Instant;
 
 /// Temperature reduction rule used by evaluation algorithm.\
 /// Linear(α): `T = T - α`, in that one α have to be positive\
@@ -14,109 +16,118 @@ pub enum Reduction {
     SlowDecrease(f64),
 }
 
+pub struct SimulatedAnnealingParams {
+    pub(crate) initial_solution: Schedule,
+    pub(crate) initial_temperature: f64,
+    pub(crate) final_temperature: f64,
+    pub(crate) reduction_rule: Reduction,
+    pub(crate) iterations_per_temperature: u16,
+    pub(crate) max_changeless_iterations: u16,
+    pub(crate) max_simulation_time: u16,
+}
+
 /// Simulated Annealing implementation.
 pub struct Solution {
-    initial_solution: Schedule,
-    reduction_rule: Reduction,
-    current_temperature: RefCell<f64>,
-    final_temperature: f64,
-    iteration_count: u16,
+    params: SimulatedAnnealingParams,
 }
 
 impl Solution {
-    pub fn new() -> Self {
-        Self {
-            initial_solution: Schedule::new(),
-            reduction_rule: Reduction::Linear(0.0),
-            current_temperature: RefCell::new(0.0),
-            final_temperature: 0.0,
-            iteration_count: 0,
-        }
+    pub fn new(params: SimulatedAnnealingParams) -> Self {
+        Self { params }
     }
 
-    pub fn with_reduction_rule(mut self, rule: Reduction) -> Self {
-        self.reduction_rule = rule;
-        self
-    }
-
-    pub fn with_temperature(mut self, temperature: f64) -> Self {
-        self.current_temperature = RefCell::new(temperature);
-        self
-    }
-
-    pub fn with_final_temperature(mut self, temperature: f64) -> Self {
-        self.final_temperature = temperature;
-        self
-    }
-
-    pub fn with_iterations_per_temperature(mut self, iteration_count: u16) -> Self {
-        self.iteration_count = iteration_count;
-        self
-    }
-
-    pub fn with_initial_solution(mut self, solution: Schedule) -> Self {
-        self.initial_solution = solution;
-        self
-    }
-
-    pub fn run(&mut self) -> Schedule {
+    pub fn run<T: std::io::Write>(&mut self, serializer: &mut Serializer<T>) -> Schedule {
         let mut rng = rand::thread_rng();
 
-        while !self.is_termination_criteria_met() {
-            for i in 0..self.iteration_count {
-                let mut neighbors = gen_neighbours(&self.initial_solution, 20);
-                let neighbor = neighbors.remove(rng.gen_range(0, neighbors.len()));
+        let mut current_solution = self.params.initial_solution.clone();
+        let mut best_solution = self.params.initial_solution.clone();
 
-                let delta = self.evaluate(&neighbor) as i128
-                    - self.evaluate(&self.initial_solution) as i128;
+        let mut current_temperature = self.params.initial_temperature;
+        let mut iteration: u64 = 1;
 
-                if delta < 0 {
-                    self.initial_solution = neighbor;
+        let mut changeless_iterations = 0u16;
+
+        let timer = Instant::now();
+        while !self.should_terminate(current_temperature, &timer, changeless_iterations) {
+            for _ in 0..self.params.iterations_per_temperature {
+                // Generate neighborhood and choose one of neighbors.
+                let neighbors = gen_neighbours(&current_solution, 200);
+                // FOR DEBUG PURPOSES:
+                // if iteration == 1 || iteration == 20 {
+                //     println!("---");
+                //     for schedule in &neighbors {
+                //         println!("{}", schedule.makespan());
+                //     }
+                // }
+                let neighbor = neighbors.iter().choose(&mut rng).unwrap().to_owned();
+
+                // Calculate delta between best timed schedule and neighbor.
+                // The reason for comparing with best time is simple:
+                // if our delta will differ a lot from best solution then
+                // chances to approve it will dive. If we'd been comparing with
+                // current solution then we could worse makespans step by step
+                // instead of improving them.
+                let delta = (neighbor.makespan() - best_solution.makespan()) as f64;
+
+                if delta < 0.0 {
+                    current_solution = neighbor;
+                    changeless_iterations = 0;
                 } else {
-                    let value: f64 = rng.gen();
-
-                    if value < (-delta as f64 / *self.current_temperature.borrow()).exp() {
-                        self.initial_solution = neighbor;
+                    if rng.gen::<f64>() < (-1.0 * delta / current_temperature).exp() {
+                        current_solution = neighbor;
+                        changeless_iterations = 0;
+                    } else {
+                        changeless_iterations += 1;
                     }
                 }
+
+                if current_solution.makespan() < best_solution.makespan() {
+                    best_solution = current_solution.clone();
+                }
+
+                serializer.add_record(Record::new(iteration, current_solution.makespan()));
+                iteration += 1;
             }
-            self.reduce_temperature();
+            current_temperature = self.reduce_temperature(current_temperature);
         }
 
-        self.initial_solution.clone()
+        serializer.save("---\n").unwrap();
+        best_solution
     }
 
-    fn is_termination_criteria_met(&self) -> bool {
-        if *self.current_temperature.borrow() <= self.final_temperature {
+    fn should_terminate(
+        &self,
+        temperature: f64,
+        timer: &Instant,
+        changeless_iterations: u16,
+    ) -> bool {
+        if temperature <= self.params.final_temperature
+            || timer.elapsed().as_secs() > self.params.max_simulation_time.into()
+            || changeless_iterations >= self.params.max_changeless_iterations
+        {
             return true;
         }
         false
     }
 
-    fn evaluate(&self, solution: &Schedule) -> u128 {
-        solution.makespan()
-    }
-
-    fn reduce_temperature(&self) {
-        match self.reduction_rule {
-            Reduction::Linear(alpha) => self.linear_decrease(alpha),
-            Reduction::Geometric(alpha) => self.geometric_decrease(alpha),
-            Reduction::SlowDecrease(beta) => self.slow_decrease(beta),
+    fn reduce_temperature(&self, temperature: f64) -> f64 {
+        match self.params.reduction_rule {
+            Reduction::Linear(alpha) => self.linear_decrease(alpha, temperature),
+            Reduction::Geometric(alpha) => self.geometric_decrease(alpha, temperature),
+            Reduction::SlowDecrease(beta) => self.slow_decrease(beta, temperature),
         }
     }
 
-    fn linear_decrease(&self, alpha: f64) {
-        *self.current_temperature.borrow_mut() -= alpha;
+    fn linear_decrease(&self, alpha: f64, temperature: f64) -> f64 {
+        temperature - alpha
     }
 
-    fn geometric_decrease(&self, alpha: f64) {
-        *self.current_temperature.borrow_mut() *= alpha;
+    fn geometric_decrease(&self, alpha: f64, temperature: f64) -> f64 {
+        temperature * alpha
     }
 
-    fn slow_decrease(&self, beta: f64) {
-        let temp = *self.current_temperature.borrow();
-
-        *self.current_temperature.borrow_mut() = temp / (1.0 + beta * temp);
+    fn slow_decrease(&self, beta: f64, temperature: f64) -> f64 {
+        temperature / (1.0 + beta * temperature)
     }
 }
 
@@ -139,16 +150,16 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
     }
 
     // first core index
-    let fci = rng.gen_range(0, cores.len());
-    let mut fc_tasks = cores.remove(fci).timeline().to_owned();
+    let fci = rng.gen_range(0..cores.len());
+    let mut fc_tasks = cores.remove(fci).get_tasks().to_owned();
 
     // second core index
-    let sci = rng.gen_range(0, cores.len());
-    let mut sc_tasks = cores.remove(sci).timeline().to_owned();
+    let sci = rng.gen_range(0..cores.len());
+    let mut sc_tasks = cores.remove(sci).get_tasks().to_owned();
 
     // random task indices
-    let fti = rng.gen_range(0, fc_tasks.len());
-    let sti = rng.gen_range(0, sc_tasks.len());
+    let fti = rng.gen_range(0..fc_tasks.len());
+    let sti = rng.gen_range(0..sc_tasks.len());
 
     let first_task = fc_tasks.remove(fti);
     let second_task = sc_tasks.remove(sti);
@@ -168,99 +179,9 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
 
 #[cfg(test)]
 mod test_simulated_annealing {
-    use crate::utils::Case;
+    use crate::utils::Task;
 
     use super::*;
-
-    #[test]
-    fn test_create_empty() {
-        let solution = Solution::new();
-
-        assert_eq!(solution.reduction_rule, Reduction::Linear(0.0));
-        assert_eq!(*solution.current_temperature.borrow(), 0.0);
-        assert_eq!(solution.final_temperature, 0.0);
-        assert_eq!(solution.iteration_count, 0);
-    }
-
-    #[test]
-    fn test_set_reduction_rule() {
-        let solution = Solution::new().with_reduction_rule(Reduction::Geometric(0.5));
-
-        assert_eq!(solution.reduction_rule, Reduction::Geometric(0.5));
-    }
-
-    #[test]
-    fn test_set_initial_temperature() {
-        let solution = Solution::new().with_temperature(85.0);
-
-        assert_eq!(*solution.current_temperature.borrow(), 85.0);
-    }
-
-    #[test]
-    fn test_set_final_temperature() {
-        let solution = Solution::new().with_final_temperature(30.0);
-
-        assert_eq!(solution.final_temperature, 30.0);
-    }
-
-    #[test]
-    fn test_set_iteration_count_per_temperature() {
-        let solution = Solution::new().with_iterations_per_temperature(100);
-
-        assert_eq!(solution.iteration_count, 100);
-    }
-
-    #[test]
-    fn test_linear_reduction() {
-        let solution = Solution::new()
-            .with_temperature(100.0)
-            .with_reduction_rule(Reduction::Linear(1.0));
-
-        solution.reduce_temperature();
-
-        assert_eq!(*solution.current_temperature.borrow(), 99.0);
-    }
-
-    #[test]
-    fn test_geometric_reduction() {
-        let solution = Solution::new()
-            .with_temperature(100.0)
-            .with_reduction_rule(Reduction::Geometric(0.8));
-
-        solution.reduce_temperature();
-
-        assert_eq!(*solution.current_temperature.borrow(), 80.0);
-    }
-
-    #[test]
-    fn test_slow_reduction() {
-        let solution = Solution::new()
-            .with_temperature(100.0)
-            .with_reduction_rule(Reduction::SlowDecrease(0.01));
-
-        solution.reduce_temperature();
-
-        assert_eq!(*solution.current_temperature.borrow(), 50.0);
-    }
-
-    #[test]
-    fn test_set_initial_solution() {
-        let (_, initial) = Case::generate(2, 4, 1, 10, 20);
-
-        let solution = Solution::new().with_initial_solution(initial.clone());
-
-        assert_eq!(solution.initial_solution, initial);
-    }
-
-    #[test]
-    fn test_evaluate_solution() {
-        let (_, initial) = Case::generate(2, 4, 1, 10, 20);
-        let makespan = initial.makespan();
-
-        let solution = Solution::new().with_initial_solution(initial);
-
-        assert_eq!(solution.evaluate(&solution.initial_solution), makespan);
-    }
 
     #[test]
     fn test_neighbour_cores() {
@@ -269,8 +190,8 @@ mod test_simulated_annealing {
         let mut first_core = Core::new();
         let mut second_core = Core::new();
 
-        first_core.add_task(crate::utils::Task::new().with_length(1));
-        second_core.add_task(crate::utils::Task::new().with_length(3));
+        first_core.add_task(Task::with_length(1));
+        second_core.add_task(Task::with_length(3));
 
         initial.add_core(first_core);
         assert_eq!(neighbour(&initial).to_owned().is_some(), false);
