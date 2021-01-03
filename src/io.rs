@@ -1,8 +1,9 @@
 use crate::utils::{Case, Task};
-use std::fs;
+use std::{error::Error, fs};
 use std::io::Write;
 use std::num::ParseIntError;
 use std::str::FromStr;
+use std::path::Path;
 
 impl ToString for Case {
     fn to_string(&self) -> String {
@@ -31,8 +32,7 @@ impl FromStr for Case {
             tasks.push(Task::with_length(length));
         }
 
-        let mut case = Case::new();
-        case.with_cores(cores);
+        let mut case = Case::new().with_cores(cores);
         case.add_tasks(tasks);
 
         Ok(case)
@@ -40,24 +40,23 @@ impl FromStr for Case {
 }
 
 impl Case {
-    pub fn save_to_file<P>(&self, path: P) -> Result<(), std::io::Error>
-    where
-        P: Into<String>,
+    pub fn save_to_file<P: Into<String>>(&self, path: P) -> Result<(), Box<dyn Error>>
     {
+        let full_path = path.into();
+        let path = Path::new(&full_path);
+        fs::create_dir_all(path.parent().unwrap_or(Path::new("./")))?;
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
-            .open(path.into())?;
-        let case = self.to_string();
+            .open(path)?;
 
+        let case = self.to_string();
         file.write_all(case.as_bytes())?;
 
         Ok(())
     }
 
-    pub fn read_from_file<P>(path: P) -> Result<Case, Box<dyn std::error::Error>>
-    where
-        P: Into<String>,
+    pub fn read_from_file<P: Into<String>>(path: P) -> Result<Case, Box<dyn Error>>
     {
         let serialized = fs::read_to_string(path.into())?.trim().to_owned();
         let case = Case::from_str(&serialized)?;

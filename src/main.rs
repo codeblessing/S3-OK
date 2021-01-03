@@ -8,15 +8,59 @@ mod serializer;
 mod simulated_annealing;
 mod utils;
 
-use std::fs::OpenOptions;
+use std::{
+    error::Error,
+    fs::{self, File, OpenOptions},
+    path::Path,
+};
 
 use app::App;
 use clap::load_yaml;
-use utils::Settings;
+use std::io::Write;
+use utils::{Case, Settings};
+
+fn open_file(name: &str, dir: &str) -> Result<File, Box<dyn Error>> {
+    fs::create_dir_all(dir)?;
+    let file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(name)?;
+
+    Ok(file)
+}
 
 fn main() {
     let cli_settings = load_yaml!("settings.yaml");
     let app_args = clap::App::from_yaml(cli_settings).get_matches();
+
+    match app_args.subcommand() {
+        ("generate", Some(args)) => {
+            let path = Path::new(args.value_of("output").unwrap());
+            let filename = path.file_name().unwrap().to_str().unwrap();
+            let dir = path.parent().unwrap().to_str().unwrap();
+
+            let mut case_output = open_file(filename, dir).unwrap();
+            let mut schedule_output = open_file(&format!("{}.schedule", filename), dir).unwrap();
+
+            let (case, schedule) = Case::generate(
+                args.value_of("min_cores").unwrap().parse().unwrap(),
+                args.value_of("max_cores").unwrap().parse().unwrap(),
+                args.value_of("min_tasks").unwrap().parse().unwrap(),
+                args.value_of("max_tasks").unwrap().parse().unwrap(),
+                args.value_of("tasks").unwrap().parse().unwrap(),
+            );
+
+            let case_serialized = case.to_string();
+            let schedule_serialized = schedule.serialize().unwrap();
+
+            case_output.write_all(case_serialized.as_bytes()).unwrap();
+            schedule_output
+                .write_all(schedule_serialized.as_bytes())
+                .unwrap();
+        }
+        _ => (),
+    }
 
     let settings = Settings {
         prompt: app_args.is_present("prompt"),
@@ -43,12 +87,11 @@ fn main() {
 
     // Clear file before usage
     {
-        OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(&settings.log_file)
-            .unwrap();
+        let path = Path::new(&settings.log_file);
+        let filename = path.file_name().unwrap().to_str().unwrap();
+        let dir = path.parent().unwrap().to_str().unwrap();
+
+        open_file(filename, dir).unwrap();
     }
 
     for file in &settings.input_files {

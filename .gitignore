@@ -6,4 +6,5 @@
 *report*
 *.test
 *.case
+*.schedule
 *.log

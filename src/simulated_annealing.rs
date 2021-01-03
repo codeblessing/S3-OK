@@ -1,6 +1,6 @@
 use crate::{
     serializer::{Record, Serializer},
-    utils::{Core, Schedule, Settings},
+    utils::{Core, Schedule},
 };
 use rand::{seq::IteratorRandom, Rng};
 use std::time::Instant;
@@ -51,9 +51,10 @@ impl Solution {
         while !self.should_terminate(current_temperature, &timer, changeless_iterations) {
             for _ in 0..self.params.iterations_per_temperature {
                 // Generate neighborhood and choose one of neighbors.
-                let neighbors = gen_neighbours(&current_solution, 40);
+                let neighbors = gen_neighbours(&current_solution, 200);
                 // FOR DEBUG PURPOSES:
-                // if iteration == 1 {
+                // if iteration == 1 || iteration == 20 {
+                //     println!("---");
                 //     for schedule in &neighbors {
                 //         println!("{}", schedule.makespan());
                 //     }
@@ -150,11 +151,11 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
 
     // first core index
     let fci = rng.gen_range(0..cores.len());
-    let mut fc_tasks = cores.remove(fci).timeline().to_owned();
+    let mut fc_tasks = cores.remove(fci).get_tasks().to_owned();
 
     // second core index
     let sci = rng.gen_range(0..cores.len());
-    let mut sc_tasks = cores.remove(sci).timeline().to_owned();
+    let mut sc_tasks = cores.remove(sci).get_tasks().to_owned();
 
     // random task indices
     let fti = rng.gen_range(0..fc_tasks.len());

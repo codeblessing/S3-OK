@@ -1,5 +1,6 @@
 use rand::Rng;
 use serde::Serialize;
+use std::ops::Range;
 
 /// Represents single, indivisible task, which takes `length` time to complete.
 #[derive(PartialEq, Debug, Clone, Copy, Serialize)]
@@ -11,7 +12,8 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// let task = Task::new().with_length(30);
+    /// // This is the same as `Task(30)`:
+    /// let task = Task::with_length(30);
     /// assert_eq!(task.length(), 30);
     /// ```
     pub fn with_length(length: u64) -> Self {
@@ -24,21 +26,14 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// let task = Task::from_range(1, 64);
+    /// let task = Task::from_range(1..64);
     /// assert!(task.length() > 0 && task.length() < 64);
     /// ```
-    pub fn from_range(min: u64, max: u64) -> Self {
-        Self(rand::thread_rng().gen_range(min..max))
+    pub fn from_range(range: Range<u64>) -> Self {
+        Self(rand::thread_rng().gen_range(range))
     }
 
     /// Returns Task length.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let task = Task::new().with_length(5);
-    /// assert_eq!(task.length(), 5);
-    /// ```
     pub fn length(&self) -> u64
     {
         return self.0;
@@ -57,7 +52,7 @@ mod test_task {
 
     #[test]
     fn test_create_from_range() {
-        let task = Task::from_range(1, 64);
+        let task = Task::from_range(1..64);
         assert!(task.length() > 0 && task.length() < 64);
     }
 

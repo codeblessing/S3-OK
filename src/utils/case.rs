@@ -24,7 +24,7 @@ impl Case {
     /// let case = Case::new().with_cores(5);
     /// assert_eq!(case.cores(), 5);
     /// ```
-    pub fn with_cores(&mut self, cores: u64) -> &mut Self {
+    pub fn with_cores(mut self, cores: u64) -> Self {
         self.cores = cores;
         self
     }
@@ -73,9 +73,9 @@ impl Case {
         self.cores
     }
 
-    /// Returns immutable reference to case's task list.
-    pub fn tasks(&self) -> &Vec<Task> {
-        &self.tasks
+    /// Returns case's task list.
+    pub fn tasks(&self) -> Vec<Task> {
+        self.tasks.clone()
     }
 }
 

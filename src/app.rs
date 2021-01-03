@@ -2,12 +2,13 @@ use crate::greedy;
 use crate::serializer::Serializer;
 use crate::simulated_annealing::{Reduction, SimulatedAnnealingParams, Solution};
 use crate::utils::{Case, Schedule, Settings};
-use std::{error::Error, fs::OpenOptions};
+use std::{error::Error, fs::{self, OpenOptions}, path::Path};
 pub struct App {}
 
 impl App {
     pub fn process(file: &str) -> Result<Schedule, Box<dyn Error>> {
         let settings = Settings::get().unwrap().read()?;
+        fs::create_dir_all(Path::new(&settings.log_file).parent().unwrap_or(Path::new("./logs")))?;
         let log_file = OpenOptions::new()
             .create(true)
             .write(true)

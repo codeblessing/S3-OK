@@ -30,8 +30,7 @@ mod test_greedy_task_planning {
 
     #[test]
     fn test_greedy_schedule() {
-        let mut case = Case::new();
-        case.with_cores(4);
+        let mut case = Case::new().with_cores(4);
 
         for i in 1..11 {
             case.add_task(Task::with_length(i));

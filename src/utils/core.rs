@@ -1,5 +1,5 @@
 use crate::utils::task::Task;
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 
 /// Represent single core (processor) on which task times are scheduled.
 #[derive(Clone, PartialEq, Debug, Serialize)]
@@ -26,8 +26,8 @@ impl Core {
     }
 
     /// Returns immutable reference to core's timeline.
-    pub fn timeline(&self) -> &Vec<Task> {
-        &self.timeline
+    pub fn get_tasks(&self) -> Vec<Task> {
+        self.timeline.clone()
     }
 
     /// Returns total length of core's schedule.
@@ -38,11 +38,11 @@ impl Core {
 
 impl<T> From<T> for Core where T: Into<Vec<Task>> {
     fn from(tasks: T) -> Self {
-        let tasks: Vec<Task> = tasks.into();
-        let time: u128 = tasks.iter().map(|task| task.length() as u128).sum();
+        let timeline = tasks.into();
+        let working_time = timeline.iter().map(|task| task.length() as u128).sum();
         Self {
-            timeline: tasks,
-            working_time: time
+            timeline,
+            working_time
         }
     }
 }
@@ -73,7 +73,7 @@ mod test_core {
         core.add_task(Task::with_length(5));
         core.add_task(Task::with_length(7));
 
-        let lengths: Vec<u64> = core.timeline().iter().map(|task| task.length()).collect();
+        let lengths: Vec<u64> = core.get_tasks().iter().map(|task| task.length()).collect();
         assert_eq!(lengths, vec![3, 5, 7]);
     }
 

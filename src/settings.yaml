@@ -33,7 +33,7 @@ args:
         long: log-file
         help: Specifies log output file.
         value_name: FILE
-        default_value: data.log
+        default_value: ./logs/data.log
     - kill:
         short: k
         long: kill
@@ -92,3 +92,4 @@ subcommands:
                             One with test case (and this one is named '[NAME]') and
                             one with optimal schedule for this test case (this one is named
                             '[NAME].schedule'"
+                default_value: ./instances/test.case
