@@ -150,7 +150,10 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
     }
 
     // first core index
-    let fci = rng.gen_range(0..cores.len());
+    let mut fci = rng.gen_range(0..cores.len());
+    while cores[fci].get_tasks().len() == 0 {
+        fci = rng.gen_range(0..cores.len());
+    }
     let mut fc_tasks = cores.remove(fci).get_tasks().to_owned();
 
     // second core index
@@ -159,12 +162,12 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
 
     // random task indices
     let fti = rng.gen_range(0..fc_tasks.len());
-    let sti = rng.gen_range(0..sc_tasks.len());
+    //let sti = rng.gen_range(0..sc_tasks.len());
 
     let first_task = fc_tasks.remove(fti);
-    let second_task = sc_tasks.remove(sti);
+    //let second_task = sc_tasks.remove(sti);
 
-    fc_tasks.push(second_task);
+    //fc_tasks.push(second_task);
     sc_tasks.push(first_task);
     cores.push(Core::from(fc_tasks));
     cores.push(Core::from(sc_tasks));
