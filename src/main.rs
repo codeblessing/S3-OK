@@ -2,6 +2,9 @@
 mod app;
 mod generator;
 mod greedy;
+
+mod random;
+
 mod io;
 mod pretty_print;
 mod serializer;

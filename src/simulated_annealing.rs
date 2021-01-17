@@ -51,7 +51,7 @@ impl Solution {
         while !self.should_terminate(current_temperature, &timer, changeless_iterations) {
             for _ in 0..self.params.iterations_per_temperature {
                 // Generate neighborhood and choose one of neighbors.
-                let neighbors = gen_neighbours(&current_solution, 200);
+                let neighbors = gen_neighbours(&current_solution, 10, current_temperature);
                 // FOR DEBUG PURPOSES:
                 // if iteration == 1 || iteration == 20 {
                 //     println!("---");
@@ -67,27 +67,31 @@ impl Solution {
                 // chances to approve it will dive. If we'd been comparing with
                 // current solution then we could worse makespans step by step
                 // instead of improving them.
-                let delta = (neighbor.makespan() - best_solution.makespan()) as f64;
+                //println!("neigh {}, best {}", neighbor.makespan(), best_solution.makespan());
+                let delta = (neighbor.makespan() as f64 - best_solution.makespan() as f64);
 
                 if delta < 0.0 {
                     current_solution = neighbor;
                     changeless_iterations = 0;
+
+                    println!("-delta_span: {}, temp: {}", current_solution.makespan(), current_temperature);
                 } else {
                     if rng.gen::<f64>() < (-1.0 * delta / current_temperature).exp() {
                         current_solution = neighbor;
                         changeless_iterations = 0;
+                        println!("+change_span: {}, temp: {}", current_solution.makespan(), current_temperature);
                     } else {
                         changeless_iterations += 1;
                     }
                 }
-
                 if current_solution.makespan() < best_solution.makespan() {
                     best_solution = current_solution.clone();
                 }
-
                 serializer.add_record(Record::new(iteration, current_solution.makespan()));
                 iteration += 1;
             }
+
+            //println!("temp: {}", current_temperature);
             current_temperature = self.reduce_temperature(current_temperature);
         }
 
@@ -131,14 +135,27 @@ impl Solution {
     }
 }
 
-pub fn gen_neighbours(schedule: &Schedule, count: u8) -> Vec<Schedule> {
+pub fn gen_neighbours(schedule: &Schedule, count: u8, temp: f64) -> Vec<Schedule> {
     let mut neighbours: Vec<Schedule> = Vec::new();
     for _ in 0..count {
-        if let Some(neighbour) = neighbour(schedule) {
+        if let Some(neighbour) = calc_neighbour(schedule, temp) {
             neighbours.push(neighbour);
         }
     }
     neighbours
+}
+
+pub fn calc_neighbour(initial: &Schedule, temp: f64) 
+                                -> Option<Schedule> {
+    let mut schedule = initial.clone();
+    for _ in 0..(temp as u64) {
+        if let Some(neighbour) = neighbour(&schedule) {
+            schedule = neighbour.to_owned();
+        } else {
+            return None;
+        }
+    }
+    Some(schedule)
 }
 
 pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
