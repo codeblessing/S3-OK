@@ -2,7 +2,7 @@ use std::error::Error;
 
 use super::Core;
 use serde::Serialize;
-use serde_json;
+use serde_json::to_string as json;
 #[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct Schedule {
     cores: Vec<Core>,
@@ -21,17 +21,17 @@ impl Schedule {
         &self.cores
     }
 
-    pub fn makespan(&self) -> u128 {
-        self.cores
+    pub fn makespan(&self) -> Result<u128, Box<dyn Error>> {
+        Ok(self
+            .cores
             .iter()
             .max_by(|x, y| x.working_time().cmp(&y.working_time()))
-            .unwrap()
-            .working_time()
+            .ok_or("Schedule with no cores.")?
+            .working_time())
     }
 
-    pub fn serialize(&self) -> Result<String, Box<dyn Error>> {
-        let serialized = serde_json::to_string(self)?;
-        Ok(serialized)
+    pub fn serialize(&self) -> String {
+        json(self).unwrap()
     }
 }
 
@@ -79,7 +79,7 @@ mod test_schedule {
         schedule.add_core(second_core);
         schedule.add_core(third_core);
 
-        let makespan = schedule.makespan();
+        let makespan = schedule.makespan().unwrap();
 
         assert_eq!(makespan, 8);
     }

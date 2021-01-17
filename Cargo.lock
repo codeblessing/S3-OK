@@ -49,18 +49,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "co-pcmax"
-version = "0.1.0"
-dependencies = [
- "clap",
- "colorful",
- "once_cell",
- "rand",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "colorful"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -97,6 +85,18 @@ name = "libc"
 version = "0.2.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2448f6066e80e3bfc792e9c98bf705b4b0fc6e8ef5b43e5889aff0eaa9c58743"
+
+[[package]]
+name = "max"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "colorful",
+ "once_cell",
+ "rand",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "once_cell"

@@ -2,6 +2,7 @@
 /.idea
 /analysis
 /report
+/instances
 
 *report*
 *.test

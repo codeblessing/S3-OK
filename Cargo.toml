@@ -1,5 +1,5 @@
 [package]
-name = "co-pcmax"
+name = "max"
 version = "0.1.0"
 authors = ["Jakub Kwiatkowski <jakubkw99@gmail.com>"]
 edition = "2018"

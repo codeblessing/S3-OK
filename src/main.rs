@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 mod app;
-mod generator;
 mod greedy;
 mod io;
+mod modules;
 mod pretty_print;
 mod serializer;
 mod simulated_annealing;
@@ -17,7 +17,9 @@ use std::{
 use app::App;
 use clap::load_yaml;
 use std::io::Write;
-use utils::{Case, Settings};
+use utils::Settings;
+
+use modules::generator;
 
 fn open_file(name: &str, dir: &str) -> Result<File, Box<dyn Error>> {
     fs::create_dir_all(dir)?;
@@ -25,7 +27,7 @@ fn open_file(name: &str, dir: &str) -> Result<File, Box<dyn Error>> {
         .create(true)
         .write(true)
         .append(true)
-        .open(name)?;
+        .open(format!("{}/{}", dir, name))?;
 
     Ok(file)
 }
@@ -43,16 +45,15 @@ fn main() {
             let mut case_output = open_file(filename, dir).unwrap();
             let mut schedule_output = open_file(&format!("{}.schedule", filename), dir).unwrap();
 
-            let (case, schedule) = Case::generate(
-                args.value_of("min_cores").unwrap().parse().unwrap(),
-                args.value_of("max_cores").unwrap().parse().unwrap(),
-                args.value_of("min_tasks").unwrap().parse().unwrap(),
-                args.value_of("max_tasks").unwrap().parse().unwrap(),
-                args.value_of("tasks").unwrap().parse().unwrap(),
-            );
+            let cores = args.value_of("cores").unwrap().parse::<u16>().unwrap();
+            let optimal = args
+                .value_of("optimal")
+                .and_then(|val| val.parse::<u64>().ok());
 
-            let case_serialized = case.to_string();
-            let schedule_serialized = schedule.serialize().unwrap();
+            let (case, schedule) = generator::generate(cores, optimal);
+
+            let case_serialized = case.serialize();
+            let schedule_serialized = schedule.serialize();
 
             case_output.write_all(case_serialized.as_bytes()).unwrap();
             schedule_output
@@ -97,7 +98,7 @@ fn main() {
     for file in &settings.input_files {
         println!("Processing {}", file);
         match App::process(file) {
-            Ok(schedule) => println!("SA solution: {}", schedule.makespan()),
+            Ok(schedule) => println!("SA solution: {}", schedule.makespan().unwrap()),
             Err(err) => eprintln!("An error occured during processing. {}", err),
         }
     }
@@ -114,7 +115,7 @@ fn main() {
 
             println!("Processing {}", file);
             match App::process(&file) {
-                Ok(schedule) => println!("SA solution: {}", schedule.makespan()),
+                Ok(schedule) => println!("SA solution: {}", schedule.makespan().unwrap()),
                 Err(err) => eprintln!("An error occured during processing. {}", err),
             }
         }

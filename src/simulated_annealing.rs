@@ -48,17 +48,12 @@ impl Solution {
         let mut changeless_iterations = 0u16;
 
         let timer = Instant::now();
+        serializer.add_record(Record::new(0, current_solution.makespan().unwrap()));
         while !self.should_terminate(current_temperature, &timer, changeless_iterations) {
             for _ in 0..self.params.iterations_per_temperature {
                 // Generate neighborhood and choose one of neighbors.
                 let neighbors = gen_neighbours(&current_solution, 200);
-                // FOR DEBUG PURPOSES:
-                // if iteration == 1 || iteration == 20 {
-                //     println!("---");
-                //     for schedule in &neighbors {
-                //         println!("{}", schedule.makespan());
-                //     }
-                // }
+
                 let neighbor = neighbors.iter().choose(&mut rng).unwrap().to_owned();
 
                 // Calculate delta between best timed schedule and neighbor.
@@ -67,7 +62,8 @@ impl Solution {
                 // chances to approve it will dive. If we'd been comparing with
                 // current solution then we could worse makespans step by step
                 // instead of improving them.
-                let delta = (neighbor.makespan() - best_solution.makespan()) as f64;
+                let delta =
+                    (neighbor.makespan().unwrap() - best_solution.makespan().unwrap()) as f64;
 
                 if delta < 0.0 {
                     current_solution = neighbor;
@@ -81,11 +77,14 @@ impl Solution {
                     }
                 }
 
-                if current_solution.makespan() < best_solution.makespan() {
+                if current_solution.makespan().unwrap() < best_solution.makespan().unwrap() {
                     best_solution = current_solution.clone();
                 }
 
-                serializer.add_record(Record::new(iteration, current_solution.makespan()));
+                serializer.add_record(Record::new(
+                    iteration + 1,
+                    current_solution.makespan().unwrap(),
+                ));
                 iteration += 1;
             }
             current_temperature = self.reduce_temperature(current_temperature);

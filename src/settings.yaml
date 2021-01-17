@@ -46,43 +46,21 @@ subcommands:
         about: Generates test cases
         version: "0.12.20210102"
         args:
-            - min_cores:
-                long: min-core-count
-                help: Specifies maximum number of cores that should be used in generated case. Defaults to 2.
-                multiple: false
-                takes_value: true
-                value_name: MIN CORE COUNT
-                default_value: '2'
-            - max_cores:
+            - cores:
                 short: c
-                long: max-core-count
-                help: Specifies maximum number of cores that should be used in generated case.
+                long: core-count
+                help: Specifies number of cores that should be used in generated case.
                 required: true
                 multiple: false
                 takes_value: true
-                value_name: MAX CORE COUNT
-            - tasks:
-                short: t
-                long: task-count
-                help: Specifies maximum number of tasks that should be used in generated case.
-                required: true
+                value_name: CORE COUNT
+            - optimal:
+                short: v
+                long: optimal-value
+                help: Specifies optimal value of makespan for case.
                 multiple: false
                 takes_value: true
-                value_name: TASK COUNT
-            - min_tasks:
-                long: min-task-time
-                help: Specifies minimum computation time that task can have. Defaults to 1.
-                multiple: false
-                takes_value: true
-                value_name: MIN TASK TIME
-                default_value: '1'
-            - max_tasks:
-                long: max-task-time
-                help: Specifies maximum computation time that task can have. Defaults to 100.
-                multiple: false
-                takes_value: true
-                value_name: MAX TASK TIME
-                default_value: '100'
+                value_name: OPTIMAL VALUE
             - output:
                 short: o
                 long: output

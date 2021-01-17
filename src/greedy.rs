@@ -38,6 +38,6 @@ mod test_greedy_task_planning {
 
         let schedule = schedule(&case);
 
-        assert_eq!(schedule.makespan(), 15);
+        assert_eq!(schedule.makespan().unwrap(), 15);
     }
 }

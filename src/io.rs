@@ -1,9 +1,9 @@
 use crate::utils::{Case, Task};
-use std::{error::Error, fs};
 use std::io::Write;
 use std::num::ParseIntError;
-use std::str::FromStr;
 use std::path::Path;
+use std::str::FromStr;
+use std::{error::Error, fs};
 
 impl ToString for Case {
     fn to_string(&self) -> String {
@@ -40,15 +40,11 @@ impl FromStr for Case {
 }
 
 impl Case {
-    pub fn save_to_file<P: Into<String>>(&self, path: P) -> Result<(), Box<dyn Error>>
-    {
+    pub fn save_to_file<P: Into<String>>(&self, path: P) -> Result<(), Box<dyn Error>> {
         let full_path = path.into();
         let path = Path::new(&full_path);
         fs::create_dir_all(path.parent().unwrap_or(Path::new("./")))?;
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(path)?;
+        let mut file = fs::OpenOptions::new().write(true).create(true).open(path)?;
 
         let case = self.to_string();
         file.write_all(case.as_bytes())?;
@@ -56,12 +52,15 @@ impl Case {
         Ok(())
     }
 
-    pub fn read_from_file<P: Into<String>>(path: P) -> Result<Case, Box<dyn Error>>
-    {
+    pub fn read_from_file<P: Into<String>>(path: P) -> Result<Case, Box<dyn Error>> {
         let serialized = fs::read_to_string(path.into())?.trim().to_owned();
         let case = Case::from_str(&serialized)?;
 
         Ok(case)
+    }
+
+    pub fn serialize(&self) -> String {
+        self.to_string()
     }
 }
 

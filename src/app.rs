@@ -20,7 +20,7 @@ impl App {
         let case = Case::read_from_file(file)?;
         let initial = greedy::schedule(&case);
 
-        println!("Greedy solution: {}", initial.makespan());
+        println!("Greedy solution: {}", initial.makespan().unwrap());
         let params = SimulatedAnnealingParams {
             initial_solution: initial,
             initial_temperature: 100.0,
