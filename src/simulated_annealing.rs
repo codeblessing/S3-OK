@@ -51,7 +51,7 @@ impl Solution {
         while !self.should_terminate(current_temperature, &timer, changeless_iterations) {
             for _ in 0..self.params.iterations_per_temperature {
                 // Generate neighborhood and choose one of neighbors.
-                let neighbors = gen_neighbours(&current_solution, 10, current_temperature);
+                let neighbors = gen_neighbours(&current_solution, 50, 1.0);
                 // FOR DEBUG PURPOSES:
                 // if iteration == 1 || iteration == 20 {
                 //     println!("---");
@@ -68,18 +68,20 @@ impl Solution {
                 // current solution then we could worse makespans step by step
                 // instead of improving them.
                 //println!("neigh {}, best {}", neighbor.makespan(), best_solution.makespan());
-                let delta = (neighbor.makespan() as f64 - best_solution.makespan() as f64);
+                
+                //let delta = (neighbor.makespan() as f64 - best_solution.makespan() as f64);
+                
+                // it actually gives better output
+                let delta = neighbor.makespan() as f64 - current_solution.makespan() as f64;
 
                 if delta < 0.0 {
                     current_solution = neighbor;
                     changeless_iterations = 0;
-
                     println!("-delta_span: {}, temp: {}", current_solution.makespan(), current_temperature);
                 } else {
                     if rng.gen::<f64>() < (-1.0 * delta / current_temperature).exp() {
                         current_solution = neighbor;
                         changeless_iterations = 0;
-                        println!("+change_span: {}, temp: {}", current_solution.makespan(), current_temperature);
                     } else {
                         changeless_iterations += 1;
                     }
@@ -90,11 +92,8 @@ impl Solution {
                 serializer.add_record(Record::new(iteration, current_solution.makespan()));
                 iteration += 1;
             }
-
-            //println!("temp: {}", current_temperature);
             current_temperature = self.reduce_temperature(current_temperature);
         }
-
         serializer.save("---\n").unwrap();
         best_solution
     }
@@ -219,38 +218,4 @@ mod test_simulated_annealing {
         initial.add_core(second_core);
         assert_eq!(neighbour(&initial).to_owned().is_some(), true);
     }
-
-    /*
-    #[test]
-    fn test_neighbour_difference() {
-        let mut count   = 0;
-        let mut initial = Schedule::new();
-
-        let mut first_core  = Core::new();
-        let mut second_core = Core::new();
-        let mut third_core  = Core::new();
-
-        first_core.add_task(crate::utils::Task::new().with_length(1));
-        first_core.add_task(crate::utils::Task::new().with_length(1));
-
-        second_core.add_task(crate::utils::Task::new().with_length(2));
-        second_core.add_task(crate::utils::Task::new().with_length(2));
-
-        third_core.add_task(crate::utils::Task::new().with_length(3));
-        third_core.add_task(crate::utils::Task::new().with_length(3));
-
-        initial.add_core(first_core);
-        initial.add_core(second_core);
-        initial.add_core(third_core);
-
-        let case = neighbour(&initial);
-
-        match case {
-            Some(test) =>,
-            None =>
-                count = 0
-        }
-        assert_eq!(count, 2);
-    }
-    */
 }

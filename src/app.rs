@@ -24,13 +24,12 @@ impl App {
         //println!("Greedy solution: {}", initial.makespan());
         let params = SimulatedAnnealingParams {
             initial_solution: initial,
-            //initial_temperature: 40.0,
-            initial_temperature: 75.0,
-            final_temperature: 1.0,
-            reduction_rule: Reduction::SlowDecrease(0.0003),
-            iterations_per_temperature: 10,
+            initial_temperature: 100.0,
+            final_temperature: 0.1,
+            reduction_rule: Reduction::Geometric(0.98),
+            iterations_per_temperature: 50,
             max_simulation_time: settings.kill_time,
-            max_changeless_iterations: 1200,
+            max_changeless_iterations: 12000,
         };
 
         let solution = Solution::new(params).run(&mut serializer);
