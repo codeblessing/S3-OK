@@ -161,7 +161,7 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
 
     let mut fci = 0;
     let mut sci = 0;
-    let alpha   = 0.45;
+    let alpha   = 0.60;
     
     // first core index
     if rng.gen::<f64>() > alpha {
@@ -192,6 +192,7 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
     let mut sc_tasks = cores.remove(sci).get_tasks().to_owned();
 
     // gen random task index and move it to a second core
+    min_time = u128::MAX;
     let mut fti = 0;
     if rng.gen::<f64>() > alpha {
         fti = rng.gen_range(0..fc_tasks.len());

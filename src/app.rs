@@ -26,7 +26,7 @@ impl App {
             initial_solution: initial,
             initial_temperature: 75.0,
             final_temperature: 0.01,
-            reduction_rule: Reduction::Geometric(0.99),
+            reduction_rule: Reduction::Geometric(0.995),
             iterations_per_temperature: 20,
             max_simulation_time: 120,
             //max_simulation_time: settings.kill_time,
