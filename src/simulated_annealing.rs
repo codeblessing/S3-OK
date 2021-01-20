@@ -52,18 +52,19 @@ impl Solution {
         while !self.should_terminate(current_temperature, &timer, changeless_iterations) {
             for _ in 0..self.params.iterations_per_temperature {
                 // Generate neighborhood and choose one of neighbors.
-                let neighbors = gen_neighbours(&current_solution, 200);
-
+                let neighbors = gen_neighbours(&current_solution, 20, current_temperature);
+                // FOR DEBUG PURPOSES:
+                // if iteration % 50 == 0 {
+                //     println!("---");
+                //     for schedule in &neighbors {
+                //         println!("{}", schedule.makespan());
+                //     }
+                // }
                 let neighbor = neighbors.iter().choose(&mut rng).unwrap().to_owned();
-
-                // Calculate delta between best timed schedule and neighbor.
-                // The reason for comparing with best time is simple:
-                // if our delta will differ a lot from best solution then
-                // chances to approve it will dive. If we'd been comparing with
-                // current solution then we could worse makespans step by step
-                // instead of improving them.
-                let delta =
-                    (neighbor.makespan().unwrap() - best_solution.makespan().unwrap()) as f64;
+                
+                // let delta = neighbor.makespan() as f64 - best_solution.makespan() as f64;
+                // it actually outputs better results
+                let delta = neighbor.makespan().unwrap() as f64 - current_solution.makespan().unwrap() as f64;
 
                 if delta < 0.0 {
                     current_solution = neighbor;
@@ -76,7 +77,6 @@ impl Solution {
                         changeless_iterations += 1;
                     }
                 }
-
                 if current_solution.makespan().unwrap() < best_solution.makespan().unwrap() {
                     best_solution = current_solution.clone();
                 }
@@ -89,7 +89,6 @@ impl Solution {
             }
             current_temperature = self.reduce_temperature(current_temperature);
         }
-
         serializer.save("---\n").unwrap();
         best_solution
     }
@@ -130,14 +129,27 @@ impl Solution {
     }
 }
 
-pub fn gen_neighbours(schedule: &Schedule, count: u8) -> Vec<Schedule> {
+pub fn gen_neighbours(schedule: &Schedule, count: u8, temp: f64) -> Vec<Schedule> {
     let mut neighbours: Vec<Schedule> = Vec::new();
     for _ in 0..count {
-        if let Some(neighbour) = neighbour(schedule) {
+        if let Some(neighbour) = calc_neighbour(schedule, temp) {
             neighbours.push(neighbour);
         }
     }
     neighbours
+}
+
+pub fn calc_neighbour(initial: &Schedule, temp: f64) 
+                                -> Option<Schedule> {
+    let mut schedule = initial.clone();
+    for _ in 0..((temp.log(5.0) + 1.0) as u64) {
+        if let Some(neighbour) = neighbour(&schedule) {
+            schedule = neighbour.to_owned();
+        } else {
+            return None;
+        }
+    }
+    Some(schedule)
 }
 
 pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
@@ -148,26 +160,57 @@ pub fn neighbour(initial: &Schedule) -> Option<Schedule> {
         return None;
     }
 
+    let mut max_time = 0;
+    let mut min_time = u128::MAX;
+
+    let mut fci = 0;
+    let mut sci = 0;
+    let alpha   = 0.60;
+    
     // first core index
-    let mut fci = rng.gen_range(0..cores.len());
-    while cores[fci].get_tasks().len() == 0 {
-        fci = rng.gen_range(0..cores.len());
+    if rng.gen::<f64>() > alpha {
+        while cores[fci].get_tasks().len() == 0 {
+            fci = rng.gen_range(0..cores.len());
+        }
+    } else {
+        for i in 0..cores.len() {
+           if cores[i].working_time() > max_time {
+               max_time = cores[i].working_time();
+               fci = i;
+           }
+        }
     }
     let mut fc_tasks = cores.remove(fci).get_tasks().to_owned();
 
     // second core index
-    let sci = rng.gen_range(0..cores.len());
+    if rng.gen::<f64>() > alpha {
+        sci = rng.gen_range(0..cores.len());
+    } else {
+        for i in 0..cores.len() {
+            if cores[i].working_time() < min_time {
+                min_time = cores[i].working_time();
+                sci = i;
+            }
+        }
+    }
     let mut sc_tasks = cores.remove(sci).get_tasks().to_owned();
 
-    // random task indices
-    let fti = rng.gen_range(0..fc_tasks.len());
-    //let sti = rng.gen_range(0..sc_tasks.len());
-
+    // gen random task index and move it to a second core
+    min_time = u128::MAX;
+    let mut fti = 0;
+    if rng.gen::<f64>() > alpha {
+        fti = rng.gen_range(0..fc_tasks.len());
+    } else {
+        for i in 0..fc_tasks.len() {
+            if fc_tasks[i].length() < min_time as u64 {
+                min_time = fc_tasks[i].length() as u128;
+                fti = i;
+            }
+        }
+    }
     let first_task = fc_tasks.remove(fti);
-    //let second_task = sc_tasks.remove(sti);
-
-    //fc_tasks.push(second_task);
     sc_tasks.push(first_task);
+
     cores.push(Core::from(fc_tasks));
     cores.push(Core::from(sc_tasks));
 
@@ -201,38 +244,4 @@ mod test_simulated_annealing {
         initial.add_core(second_core);
         assert_eq!(neighbour(&initial).to_owned().is_some(), true);
     }
-
-    /*
-    #[test]
-    fn test_neighbour_difference() {
-        let mut count   = 0;
-        let mut initial = Schedule::new();
-
-        let mut first_core  = Core::new();
-        let mut second_core = Core::new();
-        let mut third_core  = Core::new();
-
-        first_core.add_task(crate::utils::Task::new().with_length(1));
-        first_core.add_task(crate::utils::Task::new().with_length(1));
-
-        second_core.add_task(crate::utils::Task::new().with_length(2));
-        second_core.add_task(crate::utils::Task::new().with_length(2));
-
-        third_core.add_task(crate::utils::Task::new().with_length(3));
-        third_core.add_task(crate::utils::Task::new().with_length(3));
-
-        initial.add_core(first_core);
-        initial.add_core(second_core);
-        initial.add_core(third_core);
-
-        let case = neighbour(&initial);
-
-        match case {
-            Some(test) =>,
-            None =>
-                count = 0
-        }
-        assert_eq!(count, 2);
-    }
-    */
 }

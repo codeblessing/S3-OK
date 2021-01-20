@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 mod app;
 mod greedy;
+
+mod random;
+
 mod io;
 mod modules;
 mod pretty_print;
