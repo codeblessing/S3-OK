@@ -18,10 +18,10 @@ impl App {
         serializer.buffered(!settings.unbuffered);
 
         let case    = Case::read_from_file(file)?;
-        //let initial = greedy::schedule(&case);
+        let greed   = greedy::schedule(&case.clone());
         let initial = random::schedule(&case);
 
-        //println!("Greedy solution: {}", initial.makespan());
+        println!("Greedy solution: {}", greed.makespan().unwrap());
         let params = SimulatedAnnealingParams {
             initial_solution: initial,
             initial_temperature: 75.0,
